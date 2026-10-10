@@ -80,7 +80,7 @@ start-up; after that $2000-$27FF is the character set, built at run time.""",
     0x2400: 'Maze 1 screen as loaded (saved to $A400)',
     0x2800: """Game sprites (VIC bank 0, pointers $A0-$DF). The title screen swaps
 $2800-$29FF with title_sprites ($8D00) and back (swap_title_sprites).
-$31C0 (pointer $C7): ball shadow, drawn at run time; $3200 (pointer $C8):
+$31C0 (pointer $C7): ball shading, drawn at run time; $3200 (pointer $C8):
 ball dissolve buffer; $3700/$3780: ball / hole sprites masked to the
 current tilt.""",
     0x3800: 'Shine offset for each value of shine_x / shine_y',
@@ -160,4 +160,16 @@ COMMENTS.update({
     0x3b6c: 'hold open until step gate_anim_start',
     0x3b75: 'then close: gate_frame back to 0',
     0x3b89: 'closed again: gate sound, done',
+})
+
+FORMATS.update({
+    0x7800: ('rows', 40),
+    0x7c00: ('rows', 40),
+})
+BLOCK_COMMENTS.update({
+    0x2400: 'Maze 1 screen as loaded (saved to $A400)',
+    0x7800: """Maze 2 screen as loaded (saved to $A800). At run time $7800-$7BE7 is
+the colour buffer, and $7800/$7900 also hold the floor mark list.""",
+    0x7c00: """Maze 3 screen as loaded (saved to $AC00). At run time $7C00-$7FE7 is
+the screen buffer the mazes are drawn into.""",
 })

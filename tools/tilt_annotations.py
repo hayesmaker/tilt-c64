@@ -46,7 +46,7 @@ the loader's last two instructions."""),
     ('basic', 0x0800, 0x080d, 'data', 'BASIC line: 0 SYS2061'),
     ('main', 0x080d, 0x8f00, 'code', 'The TILT program'),
     ('junk_8f00', 0x8f00, 0xa000, 'binary', 'Not used: leftover RAM contents (a 256 byte KERNAL fragment, repeated)'),
-    ('charset_backup', 0xa000, 0xb000, 'binary', """Overwritten at start-up with a copy of the two character sets
+    ('maze_screens', 0xa000, 0xb000, 'binary', """The four maze screens, 1K each, copied here at start-up
 ($2000-$27FF -> $A000, $7800-$7FFF -> $A800). The bytes here are leftovers."""),
     ('junk_b000', 0xb000, 0xce00, 'binary', 'Not used: leftover RAM contents'),
     ('variables', 0xce00, 0xd000, 'binary', """Game variables ($CE00-$CFFF, see the labels at the top of the file).
@@ -56,7 +56,12 @@ The game sets them before use; the bytes here are leftovers."""),
 ]
 
 # parts of the source written to separate include files: (start, end, file, description)
-SPLITS = []
+SPLITS = [
+    (0x2000, 0x2800, 'mazes_0_1.asm', 'Maze 0 and 1 screens as loaded (the font area at run time)'),
+    (0x2800, 0x3800, 'sprites.asm', 'Game sprites (pointers $A0-$DF)'),
+    (0x7800, 0x8000, 'mazes_2_3.asm', 'Maze 2 and 3 screens as loaded (the colour / screen buffers at run time)'),
+    (0x8000, 0x8f00, 'music.asm', 'Music driver and data, title screen sprites'),
+]
 
 ENTRY_POINTS = [0x0425, 0x0460, 0x080d]
 NO_RETURN = set()

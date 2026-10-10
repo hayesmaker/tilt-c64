@@ -59,7 +59,7 @@ LABELS = {
     0x14ad: 'build_junction_chars2',
     0x14fb: 'build_junction_chars3',
     0x1596: 'roll_sound',
-    0x1647: 'place_ball_sprite',
+    0x1647: 'place_ball_shadow',
     0x1687: 'frame_side_shift',
     0x16c1: 'frame_side_table',
     0x16f3: 'draw_frame_bottom',
@@ -129,7 +129,7 @@ Returns: A moved by tilt_rate toward 0, $80 or 255""",
   LOAD "MUSIC.MOD",8,1
 The game was put together from these modules. Not used.""",
     0x1596: """Rolling noise: SID voice 3 noise, volume and filter follow the ball speed""",
-    0x1647: """Ball (sprite 4) position = ball position + perspective shift - 4""",
+    0x1647: """Ball shadow (sprite 4, black) = ball position + perspective shift - 4""",
     0x1687: """Params: X, Y = perspective shift 0-8
 Returns: X, Y = start/end of the visible side of the board frame""",
     0x16f3: """Draw the board frame sides with the characters for the current tilt
