@@ -39,6 +39,9 @@ Needs Java + KickAssembler (`KICKASS=/path/to/KickAss.jar`, default
   two walls: make corridors at least two cells wide.
 * **Build & play** (Ctrl+Enter) builds the cartridge and runs it: arrow keys
   and Z / left Ctrl are the joystick in port 2, F7 demo, F1 restart, M music.
+  **Play this maze** (Ctrl+Shift+Enter) builds a cartridge with only the
+  current maze, starting on the level chosen under "Gates of level", to test
+  it quickly (Rebuild in the player repeats the last kind of build).
   **Download .crt** saves the cartridge for VICE or real hardware.
 * The set is kept in the browser (local storage); **Save** downloads it as
   JSON, **Open** loads one. `../tilt-mod/build.sh myset.json` builds the

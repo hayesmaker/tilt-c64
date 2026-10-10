@@ -9,6 +9,8 @@ Maze set JSON:
   "format": "tilt-mazes", "version": 1,
   "demo_maze": 2,                       maze the demo plays (its recording is made for
                                         original maze 2: keep it there)
+  "start_level": 0,                     optional: level a game starts on (0 = level 1);
+                                        used to test a maze on a later level
   "mazes": [ {
       "name": "...",
       "screen": [25 strings of 80 hex digits],   40 x 25 screen codes; rows 0-1 are
@@ -82,6 +84,8 @@ def check(data):
         raise SystemExit('need 1-%d mazes, got %d' % (MAX_MAZES, len(mazes)))
     if not 0 <= data.get('demo_maze', 0) < len(mazes):
         raise SystemExit('demo_maze out of range')
+    if not 0 <= data.get('start_level', 0) <= 98:
+        raise SystemExit('start_level must be 0-98')
     for i, z in enumerate(mazes):
         where = 'maze %d (%s)' % (i, z.get('name', ''))
         if len(z['screen']) != 25 or any(len(r) != 80 for r in z['screen']):
@@ -108,6 +112,7 @@ def build(src, outdir):
     directory[0] = len(mazes)
     directory[1] = data.get('demo_maze', 2)
     directory[2:10] = b'TILTMAZE'
+    directory[10] = data.get('start_level', 0)
     screens = bytearray(nbanks * 8192)
     for n, z in enumerate(mazes):
         scr = b''.join(bytes.fromhex(r) for r in z['screen'])

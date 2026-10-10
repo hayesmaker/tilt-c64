@@ -378,13 +378,22 @@ function download(name: string, data: BlobPart, type: string) {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
-async function buildAndPlay() {
-  const errs = problems.filter((p) => p.level === 'error');
-  if (errs.length && !confirm(`${errs.length} errors in the set (see Problems). Build anyway?`)) return;
+/** Build and play: the whole set, or only the current maze (a one-maze set that
+ *  starts on the level shown under "Gates of level"). */
+let lastPlay: 'set' | 'maze' = 'set';
+async function buildAndPlay(what: 'set' | 'maze' = lastPlay) {
+  lastPlay = what;
+  const one = what === 'maze';
+  const errs = problems.filter((p) => p.level === 'error' && (!one || p.maze === cur));
+  if (errs.length && !confirm(`${errs.length} errors in ${one ? 'this maze' : 'the set'} (see Problems). Build anyway?`)) return;
+  const body = one
+    ? { ...toJson({ ...set, demo_maze: 0, mazes: [maze()] }), start_level: view.levelRow }
+    : toJson(set);
+  const title = one ? `${maze().name}, level ${view.levelRow === 4 ? 5 : view.levelRow + 1}` : `Tilt: ${set.mazes.length} mazes`;
   setStatus('building…');
-  $<HTMLButtonElement>('#b-play').disabled = true;
+  for (const b of ['#b-play', '#b-play-one']) $<HTMLButtonElement>(b).disabled = true;
   try {
-    const res = await fetch('/api/build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(toJson(set)) });
+    const res = await fetch('/api/build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const r = await res.json();
     if (!res.ok || !r.ok) {
       setStatus(`build failed: ${r.error ?? res.statusText}`);
@@ -398,12 +407,12 @@ async function buildAndPlay() {
     const a = $<HTMLAnchorElement>('#b-crt');
     a.href = lastCrtUrl;
     a.hidden = false;
-    setStatus(`built in ${(r.ms / 1000).toFixed(1)} s: ${set.mazes.length} mazes, ${(crt.length / 1024).toFixed(0)}K cartridge`);
-    void player.run(crt, `Tilt: ${set.mazes.length} mazes`);
+    setStatus(`built in ${(r.ms / 1000).toFixed(1)} s: ${one ? '1 maze' : `${set.mazes.length} mazes`}, ${(crt.length / 1024).toFixed(0)}K cartridge`);
+    void player.run(crt, title);
   } catch (e) {
     setStatus(`build failed: ${(e as Error).message}`);
   } finally {
-    $<HTMLButtonElement>('#b-play').disabled = false;
+    for (const b of ['#b-play', '#b-play-one']) $<HTMLButtonElement>(b).disabled = false;
   }
 }
 
@@ -494,7 +503,8 @@ function wire() {
     }
     (e.target as HTMLInputElement).value = '';
   };
-  $('#b-play').onclick = () => void buildAndPlay();
+  $('#b-play').onclick = () => void buildAndPlay('set');
+  $('#b-play-one').onclick = () => void buildAndPlay('maze');
   player.onRebuild = () => void buildAndPlay();
   $('#log-close').onclick = () => ($('#log-box').hidden = true);
   window.addEventListener('keydown', (e) => {
@@ -502,7 +512,7 @@ function wire() {
     const k = e.key.toLowerCase();
     if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); $('#undo').click(); return; }
     if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); $('#redo').click(); return; }
-    if ((e.ctrlKey || e.metaKey) && k === 'enter') { e.preventDefault(); void buildAndPlay(); return; }
+    if ((e.ctrlKey || e.metaKey) && k === 'enter') { e.preventDefault(); void buildAndPlay(e.shiftKey ? 'maze' : 'set'); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     const keys: Record<string, Tool> = { w: 'wall', f: 'floor', c: 'char', i: 'pick', x: 'copy', v: 'paste', g: 'gate', h: 'hole', s: 'start' };
     if (keys[k]) setTool(keys[k]);

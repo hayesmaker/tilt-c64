@@ -18,7 +18,8 @@
 //
 // Cartridge layout (made by tools/mazes.py, packed by cart.asm):
 //   bank 10 = directory:  $8000 maze count, $8001 demo maze,
-//                         $8002-$8009 "TILTMAZE", $8040 + n * 64 = record n
+//                         $8002-$8009 "TILTMAZE", $800A start level (0 = level 1),
+//                         $8040 + n * 64 = record n
 //   banks 11+ = screens, 8 per bank (bank and page are in the record)
 // Record (64 bytes):
 //   +0 hole X  +1 hole Y  +2/+3 ball start X (low, high)  +4 ball start Y
@@ -30,6 +31,7 @@
 .const MAZE_DIR_BANK  = 10
 .const DIR_COUNT      = $8000
 .const DIR_DEMO       = $8001
+.const DIR_START      = $800a
 .const DIR_RECORDS    = $8040
 .const REC_HOLE_X     = 0
 .const REC_HOLE_Y     = 1
@@ -46,6 +48,7 @@
 maze_number:    .byte 0                     // maze being played (0 .. maze_count-1)
 maze_count:     .byte 4                     // mazes per level (from the directory)
 demo_maze:      .byte 2                     // maze the demo plays
+start_level:    .byte 0                     // level a game starts on (0 = level 1)
 level_end:      .byte 0                     // 1 = the last maze of the level is done
 record:         .fill REC_SIZE, 0           // copy of the current maze's record
 
@@ -59,7 +62,11 @@ mod_init_mazes:
     beq !+
     lda demo_maze
     sta maze_number
-!:  lda #$00
+    jmp !level_set+
+!:  lda start_level                         // not the demo: the set's start level
+    sta level                               // (init_game has just set level 1)
+!level_set:
+    lda #$00
     sta level_end
     jmp load_current
 
@@ -220,6 +227,8 @@ read_directory:
 !:  sta maze_count
     lda DIR_DEMO
     sta demo_maze
+    lda DIR_START
+    sta start_level
     lda #CART_OFF
     sta $de00
     pla

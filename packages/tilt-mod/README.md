@@ -51,7 +51,7 @@ while the cartridge is on.
 | Bank | Contents |
 |------|----------|
 | 0-9 | the original cartridge (loader, game, loading picture) with the modded game |
-| 10 | maze directory: `$8000` maze count, `$8001` demo maze, `$8002` "TILTMAZE", `$8040 + n*64` record n |
+| 10 | maze directory: `$8000` maze count, `$8001` demo maze, `$8002` "TILTMAZE", `$800A` start level, `$8040 + n*64` record n |
 | 11-15 | maze screens, 8 per bank (1K each) |
 
 Record (64 bytes): hole X, hole Y, ball start X (low, high), ball start Y,
