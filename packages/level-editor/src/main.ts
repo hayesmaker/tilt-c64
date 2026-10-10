@@ -29,7 +29,14 @@ let problems: Problem[] = [];
 let drag: { c: number; r: number; c2: number; r2: number } | null = null;
 let painting = false;
 let hover: [number, number] | null = null;
-const view: RenderOptions & { grid: boolean; zoom: number } = { shiftX: 4, shiftY: 8, levelRow: 0, sprites: true, grid: true, zoom: 3 };
+const view: RenderOptions & { grid: boolean; zoom: number; fit: boolean } = { shiftX: 4, shiftY: 8, levelRow: 0, sprites: true, grid: true, zoom: 3, fit: true };
+
+/** "fit" zoom: the largest zoom (1-4, in half steps) at which the board fits the centre column */
+function fitZoom() {
+  if (!view.fit) return;
+  const w = document.querySelector<HTMLElement>('#centre')!.clientWidth - 4;
+  view.zoom = Math.max(1, Math.min(4, Math.floor((w / (COLS * 8)) * 2) / 2));
+}
 const player = new PlayerOverlay(document.body);
 let lastCrtUrl = '';
 
@@ -75,13 +82,14 @@ function drawBoard() {
 }
 
 function drawOverlay() {
+  fitZoom();
   const z = view.zoom;
   for (const c of [board, overlay]) {
     c.style.width = `${COLS * 8 * z}px`;
     c.style.height = `${ROWS * 8 * z}px`;
   }
-  overlay.width = COLS * 8 * z;
-  overlay.height = ROWS * 8 * z;
+  overlay.width = Math.round(COLS * 8 * z);
+  overlay.height = Math.round(ROWS * 8 * z);
   const [fx, fy] = offset();
   const cellRect = (c: number, r: number, w = 1, h = 1): [number, number, number, number] =>
     [(c * 8 + fx) * z, (r * 8 + fy) * z, w * 8 * z, h * 8 * z];
@@ -424,7 +432,13 @@ function wire() {
   viewInput('#v-level', (v) => (view.levelRow = Number(v)));
   viewInput('#v-grid', (_, el) => (view.grid = el.checked));
   viewInput('#v-sprites', (_, el) => (view.sprites = el.checked));
-  viewInput('#v-zoom', (v) => (view.zoom = Number(v)));
+  $<HTMLSelectElement>('#v-zoom').addEventListener('change', (e) => {
+    const v = (e.target as HTMLSelectElement).value;
+    view.fit = v === 'fit';
+    if (!view.fit) view.zoom = Number(v);
+    drawBoard();
+  });
+  window.addEventListener('resize', () => drawOverlay());
   $('#i-name').onchange = (e) => { snapshot(); maze().name = (e.target as HTMLInputElement).value; changed(); };
   $('#i-floor').onchange = (e) => { snapshot(); maze().floor_colour = Number((e.target as HTMLSelectElement).value); changed(); };
   $('#i-frame').onchange = (e) => { snapshot(); maze().frame_colour = Number((e.target as HTMLSelectElement).value); changed(); };
