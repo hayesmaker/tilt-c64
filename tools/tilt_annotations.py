@@ -19,6 +19,14 @@ Build:   ./build.sh       (assembles src/tilt.asm, then src/cart.asm)
 """
 
 PREAMBLE = """
+// Run-time memory (VIC bank 0)
+.label screen        = $0400                // text screen, 40 x 25
+.label sprite_ptrs   = $07f8                // sprite pointers
+.label font          = $2000                // character set (built at run time)
+.label colour_buffer = $7800                // maze colours, copied to colour RAM
+.label screen_buffer = $7c00                // maze screen, copied to the screen
+.function char(n)   { .return font + n * 8 }          // address of character n
+.function sprite(n) { .return n * 64 }                // address of sprite pointer n
 """
 
 SEGMENT = """
@@ -69,6 +77,22 @@ ZP_RANGE_NAMES = []       # zero page temporaries named per code range: (start, 
 RAM_TABLES = {}           # RAM areas outside the image: start: (end_exclusive, name)
 RAM_LABELS = {}           # names emitted as constants although inside the image
 ZP = {}
+# address ranges written as expressions: (start, end, function(offset) -> text)
+def _cell(name):
+    return lambda o: '%s+%d*40+%d' % ((name,) + divmod(o, 40)) if o >= 40 else '%s+%d' % (name, o) if o else name
+def _char(o):
+    return 'char($%02x)' % (o // 8) + ('+%d' % (o % 8) if o % 8 else '')
+def _sprite(o):
+    return 'sprite($%02x)' % (0xa0 + o // 64) + ('+%d' % (o % 64) if o % 64 else '')
+BASES = [
+    (0x07f8, 0x0800, lambda o: 'sprite_ptrs+%d' % o if o else 'sprite_ptrs'),
+    (0x0400, 0x07e8, _cell('screen')),
+    (0xd800, 0xdbe8, _cell('COLOR_RAM')),
+    (0x2000, 0x2800, _char),
+    (0x2800, 0x3800, _sprite),
+    (0x7800, 0x7be8, _cell('colour_buffer')),
+    (0x7c00, 0x7fe8, _cell('screen_buffer')),
+]
 ZP_WORDS = set()          # zp names that are 16-bit (zp+1 is written name+1)
 RAM_COMMENTS = {}
 ZP_COMMENTS = {}

@@ -5,7 +5,7 @@ lo, hi = int(sys.argv[1], 16), int(sys.argv[2], 16)
 pend = []
 on = False
 for ln in open('src/tilt.asm'):
-    m = re.search(r'^(.*?)\s*// \$([0-9a-f]{4})\b ?(.*)$', ln.rstrip())
+    m = None if ln.lstrip().startswith('//') else re.search(r'^(.*?)\s*// \$([0-9a-f]{4})\b ?(.*)$', ln.rstrip())
     if m:
         a = int(m.group(2), 16)
         if a >= hi:

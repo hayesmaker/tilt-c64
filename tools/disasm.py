@@ -236,7 +236,11 @@ def ref(v, data=False):
     for (rs, (re_, rn)) in sorted(A.RAM_TABLES.items()):
         if rs <= v < re_:
             used_ram_tables.add(rs)
-            return rn if v == rs else '%s+$%02x' % (rn, v - rs)
+            return rn if v == rs else '%s+%d' % (rn, v - rs)
+    if not (in_image(v) and kind[v] == CODE):
+        for (bs, be, fmt) in A.BASES:
+            if bs <= v < be:
+                return fmt(v - bs)
     if in_image(v):
         s = insn_start(v)
         if s != v:
@@ -375,7 +379,7 @@ COMMENT_COL = 48
 
 def line(text, r=None, c=''):
     if A.SHOW_ADDR and r is not None:
-        c = ('$%04x  ' % r) + (c or '')
+        c = ('$%04x  ' % r) + (c or '') if c else '$%04x' % r
     if c:
         if len(text) >= COMMENT_COL:
             return '%s  // %s' % (text, c)
