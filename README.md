@@ -89,6 +89,14 @@ game image into the banks, so a changed `src/tilt.asm` goes straight into
   wrong, a glyph of the status line font is replaced (see
   `docs/memory_map.md` before you change code).
 
+## Packages
+
+* [`packages/tilt-mod`](packages/tilt-mod/README.md): the modded cartridge.
+  It plays a set of 1-40 mazes, stored in extra cartridge banks and loaded when
+  they are needed, instead of the original four.
+* [`packages/level-editor`](packages/level-editor/README.md): a browser maze
+  editor for tilt-mod sets, with Build & play in c64-ready.
+
 ## Tools (how the disassembly was made)
 
 | Script | Purpose |

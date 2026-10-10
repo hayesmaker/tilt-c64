@@ -22,3 +22,9 @@
   maze was finished. The $FB/$FE "special cells" are unconfirmed.
 * Code checksum $0980-$8DFF at start-up ($0827): changed code triggers the tamper glyph.
 * Docs: README.md, docs/memory_map.md, docs/mazes/ (`python3 tools/mazeview.py`).
+* `packages/tilt-mod/src` is HAND-EDITED (copy of src/ with same-size patches marked
+  `tilt-mod:` + maze_loader.asm at $C000); regen.sh never touches it. Maze sets are JSON
+  (tools/mazes.py); `python3 packages/tilt-mod/tools/test_mod.py set.json N` plays N mazes
+  in the emulator. The loader can't live at $A000-$BFFF (BASIC ROM shows while a bank is read).
+* `packages/level-editor`: Vite/TS editor (`npm run dev`, port 5181, `npm test`).
+  `public/tilt-assets.json` comes from `tools/editor_assets.py`.
