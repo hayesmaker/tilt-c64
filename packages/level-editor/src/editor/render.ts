@@ -57,12 +57,16 @@ export function renderMaze(ctx: CanvasRenderingContext2D, a: Assets, m: Maze, o:
     const p = PALETTE[BOARD_BG];
     px[i] = p[0]; px[i + 1] = p[1]; px[i + 2] = p[2]; px[i + 3] = 255;
   }
-  const put = (x: number, y: number, c: number) => {
+  // foreground pixels of the characters (multicolour %10 / %11, hires 1): sprites
+  // with background priority (the exit hole) are hidden behind them
+  const fg = new Uint8Array(COLS * 8 * ROWS * 8);
+  const put = (x: number, y: number, c: number, front = false) => {
     if (y >= STATUS_ROWS * 8) {
       x += fx;
       y += fy;
       if (x < 0 || x >= COLS * 8 || y < STATUS_ROWS * 8 || y >= ROWS * 8) return;
     }
+    if (front) fg[y * COLS * 8 + x] = 1;
     const i = (y * COLS * 8 + x) * 4;
     const p = PALETTE[c & 15];
     px[i] = p[0]; px[i + 1] = p[1]; px[i + 2] = p[2]; px[i + 3] = 255;
@@ -80,34 +84,44 @@ export function renderMaze(ctx: CanvasRenderingContext2D, a: Assets, m: Maze, o:
         if (cr & 8) {                                // multicolour
           const cols = [BOARD_BG, a.bg1, 15, cr & 7];
           for (let x = 0; x < 4; x++) {
-            const v = cols[(b >> (6 - 2 * x)) & 3];
-            put(c * 8 + 2 * x, r * 8 + y, v);
-            put(c * 8 + 2 * x + 1, r * 8 + y, v);
+            const bits = (b >> (6 - 2 * x)) & 3;
+            put(c * 8 + 2 * x, r * 8 + y, cols[bits], bits >= 2);
+            put(c * 8 + 2 * x + 1, r * 8 + y, cols[bits], bits >= 2);
           }
         } else
-          for (let x = 0; x < 8; x++) put(c * 8 + x, r * 8 + y, (b >> (7 - x)) & 1 ? cr : BOARD_BG);
+          for (let x = 0; x < 8; x++) {
+            const on = (b >> (7 - x)) & 1;
+            put(c * 8 + x, r * 8 + y, on ? cr : BOARD_BG, !!on);
+          }
       }
     }
   if (o.sprites) {
-    const sx = o.shiftX - 4, sy = o.shiftY - 4;
-    drawSprite(px, a, SPRITE.holeBottom, m.hole[0] + sx, m.hole[1] + sy, 0);
-    drawSprite(px, a, SPRITE.holeTop, m.hole[0] + sx, m.hole[1] + sy, 15);
-    drawSprite(px, a, SPRITE.ball, m.start[0], m.start[1], 1);
+    // exit hole as place_hole_sprites puts it: at hole + tilt level - 4, sprite 7 =
+    // the frame for this tilt (colour 0), sprite 6 = its masked copy (colour 15,
+    // in front of 7); both behind the walls ($D01B = $C0)
+    const hole = a.holes[o.shiftX][o.shiftY];
+    const hx = m.hole[0] + o.shiftX - 4, hy = m.hole[1] + o.shiftY - 4;
+    const frame = a.sprites.subarray((hole.ptr - 0xa0) * 64, (hole.ptr - 0xa0) * 64 + 64);
+    drawSprite(px, frame, hx, hy, 0, fg);
+    drawSprite(px, hole.masked, hx, hy, 15, fg);
+    const ball = a.sprites.subarray((SPRITE.ball - 0xa0) * 64, (SPRITE.ball - 0xa0) * 64 + 64);
+    drawSprite(px, ball, m.start[0], m.start[1], 1);
   }
   ctx.putImageData(img, 0, 0);
 }
 
-/** A hires sprite at sprite coordinates x, y. */
-function drawSprite(px: Uint8ClampedArray, a: Assets, ptr: number, x: number, y: number, colour: number) {
-  const base = (ptr - 0xa0) * 64;
+/** A hires sprite (64 bytes) at sprite coordinates x, y; with `behind`, it is
+ *  hidden where the characters have foreground pixels. */
+function drawSprite(px: Uint8ClampedArray, data: Uint8Array, x: number, y: number, colour: number, behind?: Uint8Array) {
   const p = PALETTE[colour];
   for (let row = 0; row < 21; row++)
     for (let byte = 0; byte < 3; byte++) {
-      const b = a.sprites[base + row * 3 + byte];
+      const b = data[row * 3 + byte];
       for (let bit = 0; bit < 8; bit++) {
         if (!((b >> (7 - bit)) & 1)) continue;
         const X = x - 24 + byte * 8 + bit, Y = y - 50 + row;
         if (X < 0 || Y < STATUS_ROWS * 8 || X >= COLS * 8 || Y >= ROWS * 8) continue;
+        if (behind?.[Y * COLS * 8 + X]) continue;
         const i = (Y * COLS * 8 + X) * 4;
         px[i] = p[0]; px[i + 1] = p[1]; px[i + 2] = p[2]; px[i + 3] = 255;
       }

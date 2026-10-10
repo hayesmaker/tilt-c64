@@ -17,6 +17,7 @@ OUT = os.path.join(ROOT, 'packages/level-editor/public/tilt-assets.json')
 TILT_ENABLED, TILT_LEVEL_X, TILT_LEVEL_Y = 0xcf53, 0xcf37, 0xcf38
 STEERING_ON, BALL_WAITING = 0xcf50, 0xcf73
 GATE_CELLS, GATE_CHARS = 0x39f1, 0x3a31
+HOLE_SPRITE = 0xcf6a
 
 
 def b64(b):
@@ -34,6 +35,7 @@ def main():
             break
     c.joy = 0xff
     fonts = {}
+    holes = {}
     for y in range(9):
         for x in range(9):
             for _ in range(4):                    # a few frames: the main loop rebuilds the font
@@ -43,8 +45,12 @@ def main():
                 c.m[TILT_LEVEL_X], c.m[TILT_LEVEL_Y] = x, y
                 c.run_cycles(19656)
             fonts['%d,%d' % (x, y)] = b64(c.m[0x2000:0x2800])
+            # exit hole: sprite 7 = hole_sprite (frame for this tilt), sprite 6 = its
+            # copy masked to the tilt at $3780 (mask_hole_sprite)
+            holes['%d,%d' % (x, y)] = [c.m[HOLE_SPRITE], b64(c.m[0x3780:0x37c0])]
     data = {
         'fonts': fonts,
+        'holes': holes,
         'sprites': b64(c.m[0x2800:0x3800]),        # pointers $A0-$DF
         'sprite_pointers': list(c.m[0x07f8:0x0800]),
         'gate_cells': list(c.m[GATE_CELLS:GATE_CELLS + 64]),
