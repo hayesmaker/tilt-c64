@@ -15,7 +15,7 @@
       <input id="f-file" type="file" accept=".json,application/json" hidden />
       <span class="sep"></span>
       <button id="b-play" class="primary" title="build the whole set and play it (Ctrl+Enter)">Build &amp; play</button>
-      <button id="b-play-one" title="build a cartridge with only this maze, starting on the level chosen under &quot;Gates of level&quot; (Ctrl+Shift+Enter)">Play this maze</button>
+      <button id="b-play-one" title="build a cartridge with only this maze, starting on the level chosen under &quot;Level&quot; (Ctrl+Shift+Enter)">Play this maze</button>
       <a id="b-crt" class="button" hidden download="tilt-mod.crt">Download .crt</a>
       <span id="status" class="muted"></span>
     </header>
@@ -63,7 +63,7 @@
         <div id="view">
           <label>Tilt X <input id="v-tx" type="range" min="0" max="8" value="4" /></label>
           <label>Tilt Y <input id="v-ty" type="range" min="0" max="8" value="8" /></label>
-          <label>Gates of level <select id="v-level">
+          <label title="which gates are fire gates / tilt gates, and the level Play this maze starts on">Level <select id="v-level">
             <option value="0">1</option><option value="1">2</option><option value="2">3</option>
             <option value="3">4</option><option value="4">5+</option></select></label>
           <label><input id="v-grid" type="checkbox" checked /> grid</label>
@@ -83,8 +83,10 @@
         <label class="row">Floor / walls colour <select id="i-floor"></select></label>
         <label class="row">Frame colour <select id="i-frame"></select></label>
         <h3>Gates</h3>
-        <p class="muted small">Pick a gate, then click the board with the Gate tool to move it (R rotates). The ticks say on which
-          levels the gate is there (5 = level 5 and up).</p>
+        <p class="muted small">Every gate is always there, as one of two kinds per level (5 = level 5 and up):
+          <b>ticked = fire gate</b> (yellow: fire flips it open for a moment),
+          <b>unticked = tilt gate</b> (cyan: a bar that only opens while the board tilts against it).
+          Pick a gate, then click the board with the Gate tool to move it (R rotates).</p>
         <table id="gates">
           <thead><tr><th></th><th>#</th><th>cell</th><th>shape</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr></thead>
           <tbody></tbody>

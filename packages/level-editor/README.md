@@ -31,16 +31,19 @@ Needs Java + KickAssembler (`KICKASS=/path/to/KickAss.jar`, default
   * **Gate** (G): pick a gate in the inspector (or 1-8), click to move it,
     R or right-click to rotate. **Hole** (H) and **Start** (S) place the exit
     hole and the ball.
-  * Tilt X / Y shows the board at another tilt; "Gates of level" shows which
-    gates are there on that level.
-* **Inspector** (right): name, colours, gates (shape and on which levels each
-  gate is there), and the problem list. Red crosses on the board mark cells
+  * Tilt X / Y shows the board at another tilt; "Level" shows the gates as
+    they are on that level (and is where Play this maze starts).
+* **Inspector** (right): name, colours, gates and the problem list. Every gate
+  is always there; per level it is a **fire gate** (ticked, drawn yellow: fire
+  flips it open for a moment) or a **tilt gate** (unticked, cyan: a bar that
+  only opens while the board is tilting against it, so passing it needs a
+  little wobble). Red crosses on the board mark cells
   the game has no character for, most often a corridor one cell wide between
   two walls: make corridors at least two cells wide.
 * **Build & play** (Ctrl+Enter) builds the cartridge and runs it: arrow keys
   and Z / left Ctrl are the joystick in port 2, F7 demo, F1 restart, M music.
   **Play this maze** (Ctrl+Shift+Enter) builds a cartridge with only the
-  current maze, starting on the level chosen under "Gates of level", to test
+  current maze, starting on the level chosen under "Level", to test
   it quickly (Rebuild in the player repeats the last kind of build).
   **Download .crt** saves the cartridge for VICE or real hardware.
 * The set is kept in the browser (local storage); **Save** downloads it as

@@ -74,4 +74,6 @@ export` writes it from the game image). The format is described at the top of
 * `gates`: 8 gates, each at a cell (`col`, `row`, top left of its 3x3 block)
   with an orientation 0-3.
 * `gate_masks`: 5 rows (levels 1, 2, 3, 4, 5+), each 8 bits for gates 8..1:
-  which gates are there on that level.
+  the kind of each gate on that level. 1 = fire gate (a bar that fire flips
+  open for a moment), 0 = tilt gate (a bar that only opens while the board is
+  tilting against it). Every gate is always there, as one kind or the other.

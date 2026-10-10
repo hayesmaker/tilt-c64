@@ -11,6 +11,10 @@ export interface Assets {
   gateCells: number[];
   /** gate characters: gateChars[orientation * 64 + frame * 10 + k] */
   gateChars: number[];
+  /** gate bar cells: gateBarCells[orientation * 3 + k] = screen offset (colour 15, and tilt gate bars) */
+  gateBarCells: number[];
+  /** tilt gate bar characters: [0-2] orientation 0, [3-5] the others */
+  tiltGateChars: number[];
   bg1: number;
   bg2: number;
   /** exit hole per perspective shift [x][y]: sprite 7's frame (hole_sprite) and
@@ -30,10 +34,28 @@ export async function loadAssets(url = `${import.meta.env.BASE_URL}tilt-assets.j
     const [ptr, masked] = j.holes[`${x},${y}`];
     return { ptr, masked: b64(masked) };
   }));
-  return { fonts, holes, sprites: b64(j.sprites), gateCells: j.gate_cells, gateChars: j.gate_chars, bg1: j.vic.bg1, bg2: j.vic.bg2, scrollX: j.scroll_x, scrollY: j.scroll_y };
+  return { fonts, holes, sprites: b64(j.sprites), gateCells: j.gate_cells, gateChars: j.gate_chars, gateBarCells: j.gate_bar_cells, tiltGateChars: j.tilt_gate_chars, bg1: j.vic.bg1, bg2: j.vic.bg2, scrollX: j.scroll_x, scrollY: j.scroll_y };
 }
 
-/** Cells of a gate block: [col offset, row offset, character] for the closed gate. */
+/** A tilt gate (mask bit 0): [col offset, row offset, character] of its 3-cell bar,
+ *  as draw_tilt_gates draws it (orientation 0 uses bar 0, all others bar 1). */
+export function tiltGateBar(a: Assets, orientation: number): [number, number, number][] {
+  const i = orientation === 0 ? 0 : 3;
+  return [0, 1, 2].map((k) => {
+    const off = a.gateBarCells[i + k];
+    return [off % 40, Math.floor(off / 40), a.tiltGateChars[i + k]];
+  });
+}
+
+/** The 3 cells colour_gates paints colour 15 for a gate (every gate, both kinds). */
+export function gateColourCells(a: Assets, orientation: number): [number, number][] {
+  return [0, 1, 2].map((k) => {
+    const off = a.gateBarCells[orientation * 3 + k];
+    return [off % 40, Math.floor(off / 40)];
+  });
+}
+
+/** Cells of a fire gate block: [col offset, row offset, character], closed. */
 export function gateBlock(a: Assets, orientation: number, frame = 0): [number, number, number][] {
   const n = orientation < 2 ? 9 : 10;
   const out: [number, number, number][] = [];

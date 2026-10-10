@@ -174,7 +174,7 @@
 .label frame_flash_sides              = $cf91
 .label frame_flash_corner             = $cf92
 .label shine_state                    = $cf93   // 1 = shine on the ball, 2 = it just left (plays a sound)
-.label edge_highlight_on              = $cf94
+.label tilt_gates_closed              = $cf94
 .label hole_wrap                      = $cf95
 .label gate_hit_timer                 = $cf96
 .label gate_hit_index                 = $cf98
@@ -182,8 +182,8 @@
 .label count_marks_delay              = $cf9a
 .label gate_mask                      = $cf9b   // bit mask: which of the 8 gate of the maze are on
 .label count_marks_on                 = $cf9c
-.label special_cell_timer             = $cf9d
-.label special_cell_index             = $cf9e
+.label tilt_gate_hit_timer             = $cf9d
+.label tilt_gate_hit_index             = $cf9e
 .label bonus_left                     = $cfa0
 .label shaking                        = $cfa1   // board is shaking (higher clunk sound)
 .label ball_size                      = $cfa2
@@ -4352,7 +4352,7 @@ next_maze_slide:
     jsr draw_maze_screen                        // $41fc
     sec                                         // $41ff
     jsr draw_gates                              // $4200
-    jsr draw_gate_colours                       // $4203
+    jsr draw_tilt_gates                       // $4203
     jsr fill_colour_buffer                      // $4206
     jsr colour_gates                            // $4209
     lda #$00                                    // $420c
@@ -4963,9 +4963,9 @@ level_done:
     lda demo_mode                               // $4678
     beq L4685                                   // $467b
     sec                                         // $467d
-    jsr edge_highlight_v                        // $467e
+    jsr build_tilt_gate_chars_v                        // $467e
     sec                                         // $4681
-    jsr edge_highlight_h                        // $4682
+    jsr build_tilt_gate_chars_h                        // $4682
 L4685:
     jsr ball_drop_in_hole                       // $4685
     lda #$00                                    // $4688
@@ -5064,9 +5064,9 @@ L473c:
     lda gate_anim                               // $4756
     bne L473c                                   // $4759
     sec                                         // $475b
-    jsr edge_highlight_v                        // $475c
+    jsr build_tilt_gate_chars_v                        // $475c
     sec                                         // $475f
-    jsr edge_highlight_h                        // $4760
+    jsr build_tilt_gate_chars_h                        // $4760
     jmp L477d                                   // $4763
 L4766:
     lda #$01                                    // $4766
@@ -5107,7 +5107,7 @@ L47a4:
 // ----------------------------------------------------------------------------
 level_bonus:
     jsr set_bonus_glyph                         // $47a5
-    jsr freeze_edge_highlight                   // $47a8
+    jsr copy_tilt_gate_chars                   // $47a8
     lda #$01                                    // $47ab
     sta roll_sound_off                          // $47ad
     sta bonus_sound_on                          // $47b0
@@ -5214,7 +5214,7 @@ L4853:
     jsr draw_maze_screen                        // $4853
     sec                                         // $4856
     jsr draw_gates                              // $4857
-    jsr draw_gate_colours                       // $485a
+    jsr draw_tilt_gates                       // $485a
     jsr fill_colour_buffer                      // $485d
     jsr colour_gates                            // $4860
     ldx maze                                    // $4863
@@ -5330,7 +5330,7 @@ start_first_maze:
     jsr draw_maze_screen                        // $493b
     sec                                         // $493e
     jsr draw_gates                              // $493f
-    jsr draw_gate_colours                       // $4942
+    jsr draw_tilt_gates                       // $4942
     jsr fill_colour_buffer                      // $4945
     jsr colour_gates                            // $4948
     lda #$08                                    // $494b
@@ -5461,9 +5461,9 @@ L4a6f:
     jmp L4a3d                                   // $4a72
 L4a75:
     sec                                         // $4a75
-    jsr edge_highlight_v                        // $4a76
+    jsr build_tilt_gate_chars_v                        // $4a76
     sec                                         // $4a79
-    jsr edge_highlight_h                        // $4a7a
+    jsr build_tilt_gate_chars_h                        // $4a7a
     jsr colour_marks                            // $4a7d
     jsr show_floor_marks                        // $4a80
     jsr draw_power_bar                          // $4a83
@@ -8674,7 +8674,7 @@ L62e1:
     jsr slide_scroll                            // $62e1  maze slide
     jsr count_marks                             // $62e4  end of level: count the marks
     jsr gate_hit_anim                           // $62e7  gate / special cell animations
-    jsr special_cell_anim                       // $62ea
+    jsr tilt_gate_hit_anim                       // $62ea
     jsr two_tone_sound                          // $62ed  two-tone sound
     lda level_sign_on                           // $62f0
     bne L6318                                   // $62f3
@@ -8705,7 +8705,7 @@ L6320:
 // character that depends on it (walls, frame, corners, junctions, hole)
 // ----------------------------------------------------------------------------
 update_tilt_graphics:
-    jsr update_edge_highlight                   // $6321  light the edges the board leans on
+    jsr close_tilt_gates                   // $6321  light the edges the board leans on
     lda tilt_level_x                            // $6324  perspective shift = tilt level
     sta tilt_shift_x                            // $6327
     lda tilt_level_y                            // $632a
@@ -8724,9 +8724,9 @@ L6343:
     stx zp_fc                                   // $634b
     jsr build_wall_chars                        // $634d
     clc                                         // $6350
-    jsr edge_highlight_v                        // $6351
+    jsr build_tilt_gate_chars_v                        // $6351
     clc                                         // $6354
-    jsr edge_highlight_h                        // $6355
+    jsr build_tilt_gate_chars_h                        // $6355
     jsr build_chars_2508                        // $6358
     jsr draw_frame_top                          // $635b
     jsr frame_flash_left                        // $635e
@@ -9268,7 +9268,7 @@ shine_off_sound:
 // ----------------------------------------------------------------------------
 // Colour the gate that are off
 // ----------------------------------------------------------------------------
-draw_gate_colours:
+draw_tilt_gates:
     ldx maze                                    // $67e1
     lda maze_gate_index,x                       // $67e4
     sta zp_fb                                   // $67e7
@@ -9300,7 +9300,7 @@ L6810:
 L6818:
     lda gate_cell_layout,x                      // $6818
     tay                                         // $681b
-    lda gate_colour_table,x                     // $681c
+    lda tilt_gate_chars,x                     // $681c
     sta (zp_fd),y                               // $681f
     inx                                         // $6821
     dec zp_fc                                   // $6822
@@ -9313,40 +9313,40 @@ L6826:
     dec zp_ff                                   // $682d
     bne L67f2                                   // $682f
     rts                                         // $6831
-gate_colour_table:
+tilt_gate_chars:
     .byte $fd,$fe,$ff,$fa,$fb,$fc,$9d,$9e,$9f,$9a,$9b,$9c,$0a,$20,$02,$06  // $6832
     .byte $20,$0e                               // $6842
 
 // ----------------------------------------------------------------------------
 // Light the edges of the walls the board leans on (characters $27D0+)
 // ----------------------------------------------------------------------------
-update_edge_highlight:
-    lda edge_highlight_on                       // $6844
+close_tilt_gates:
+    lda tilt_gates_closed                       // $6844
     bne L685e                                   // $6847
     lda clunk_state                             // $6849
     beq L6856                                   // $684c
     ldx speed_class                             // $684e
-    cmp clunk_highlight_delay,x                 // $6851
+    cmp tilt_gate_close_delay,x                 // $6851
     bcc L685e                                   // $6854
 L6856:
     sec                                         // $6856
-    jsr edge_highlight_v                        // $6857
+    jsr build_tilt_gate_chars_v                        // $6857
     sec                                         // $685a
-    jsr edge_highlight_h                        // $685b
+    jsr build_tilt_gate_chars_h                        // $685b
 L685e:
     rts                                         // $685e
-clunk_highlight_delay:
+tilt_gate_close_delay:
     .byte $86,$85,$84,$83,$82                   // $685f
 
 // ----------------------------------------------------------------------------
 // Light the vertical wall edges ($27E8-$27FF); C = 1 brighter
 // ----------------------------------------------------------------------------
-edge_highlight_v:
+build_tilt_gate_chars_v:
     lda #$01                                    // $6864
     bcs L686a                                   // $6866
     lda #$00                                    // $6868
 L686a:
-    sta edge_highlight_on                       // $686a
+    sta tilt_gates_closed                       // $686a
     ldx tilt_shift_x                            // $686d
     lda D68ea,x                                 // $6870
     sta zp_fb                                   // $6873
@@ -9420,7 +9420,7 @@ D6917:
 // ----------------------------------------------------------------------------
 // Light the horizontal wall edges ($27D0-$27E7); C = 1 brighter
 // ----------------------------------------------------------------------------
-edge_highlight_h:
+build_tilt_gate_chars_h:
     ldx tilt_shift_x                            // $6920
     lda D69b0,x                                 // $6923
     sta zp_f8                                   // $6926
@@ -9581,7 +9581,7 @@ unmark_special:
     cmp #$fe                                    // $6a6a
     bne L6a74                                   // $6a6c
 L6a6e:
-    jsr special_cell_hit                        // $6a6e
+    jsr tilt_gate_hit                        // $6a6e
     jmp L6a8f                                   // $6a71
 L6a74:
     cmp #$00                                    // $6a74
@@ -9771,22 +9771,22 @@ gate_hit_sound:
 // A special cell ($FB / $FE) was found under a mark: animate it and add
 // to the bonus. (Not confirmed what this is in the game.)
 // ----------------------------------------------------------------------------
-special_cell_hit:
+tilt_gate_hit:
     lda #$29                                    // $6ba7
     jsr find_gate                               // $6ba9
     bcs L6c07                                   // $6bac
     lda zp_fa                                   // $6bae
-    ldx special_cell_timer                      // $6bb0
+    ldx tilt_gate_hit_timer                      // $6bb0
     beq L6bbf                                   // $6bb3
     pha                                         // $6bb5
     lda #$01                                    // $6bb6
-    sta special_cell_timer                      // $6bb8
-    jsr special_cell_anim                       // $6bbb
+    sta tilt_gate_hit_timer                      // $6bb8
+    jsr tilt_gate_hit_anim                       // $6bbb
     pla                                         // $6bbe
 L6bbf:
-    sta special_cell_index                      // $6bbf
+    sta tilt_gate_hit_index                      // $6bbf
     lda #$10                                    // $6bc2
-    sta special_cell_timer                      // $6bc4
+    sta tilt_gate_hit_timer                      // $6bc4
     lda #$00                                    // $6bc7
     sta SID_V2_CTRL                             // $6bc9
     sta SID_V2_AD                               // $6bcc
@@ -9885,12 +9885,12 @@ gate_hit_anim_sound:
 // ----------------------------------------------------------------------------
 // Animate a special cell (pulse sound), then add to the bonus
 // ----------------------------------------------------------------------------
-special_cell_anim:
-    lda special_cell_timer                      // $6c7d
+tilt_gate_hit_anim:
+    lda tilt_gate_hit_timer                      // $6c7d
     bne L6c85                                   // $6c80
     jmp L6cf5                                   // $6c82
 L6c85:
-    dec special_cell_timer                      // $6c85
+    dec tilt_gate_hit_timer                      // $6c85
     bne L6c9a                                   // $6c88
     lda #$05                                    // $6c8a
     ldx ball_in_hole                            // $6c8c
@@ -9901,7 +9901,7 @@ L6c93:
     adc bonus_left                              // $6c94
     lda bonus_left                              // $6c97
 L6c9a:
-    ldx special_cell_index                      // $6c9a
+    ldx tilt_gate_hit_index                      // $6c9a
     lda gate_table,x                            // $6c9d
     sta zp_fb                                   // $6ca0
     inx                                         // $6ca2
@@ -9910,7 +9910,7 @@ L6c9a:
     inx                                         // $6ca8
     ldy gate_table,x                            // $6ca9
     sty zp_fa                                   // $6cac
-    lda special_cell_timer                      // $6cae
+    lda tilt_gate_hit_timer                      // $6cae
     bne L6cbc                                   // $6cb1
     iny                                         // $6cb3
     iny                                         // $6cb4
@@ -9947,7 +9947,7 @@ L6ce0:
     lda gate_cell_layout,y                      // $6ce2
     tay                                         // $6ce5
     ldx zp_f8                                   // $6ce6
-    lda gate_colour_table,x                     // $6ce8
+    lda tilt_gate_chars,x                     // $6ce8
     sta (zp_fb),y                               // $6ceb
     inc zp_fa                                   // $6ced
     inc zp_f8                                   // $6cef
@@ -9961,19 +9961,19 @@ D6cf6:
 // ----------------------------------------------------------------------------
 // Keep a copy of the lit edge characters ($27D0 -> $24D0)
 // ----------------------------------------------------------------------------
-freeze_edge_highlight:
+copy_tilt_gate_chars:
     lda #$01                                    // $6cfa
     jsr wait_frames                             // $6cfc
-    lda edge_highlight_on                       // $6cff
+    lda tilt_gates_closed                       // $6cff
     clc                                         // $6d02
     pha                                         // $6d03
     bne L6d07                                   // $6d04
     sec                                         // $6d06
 L6d07:
     php                                         // $6d07
-    jsr edge_highlight_v                        // $6d08
+    jsr build_tilt_gate_chars_v                        // $6d08
     plp                                         // $6d0b
-    jsr edge_highlight_h                        // $6d0c
+    jsr build_tilt_gate_chars_h                        // $6d0c
     ldx #$2f                                    // $6d0f
 L6d11:
     lda char($fa),x                             // $6d11
@@ -9986,9 +9986,9 @@ L6d11:
     sec                                         // $6d1e
 L6d1f:
     php                                         // $6d1f
-    jsr edge_highlight_v                        // $6d20
+    jsr build_tilt_gate_chars_v                        // $6d20
     plp                                         // $6d23
-    jsr edge_highlight_h                        // $6d24
+    jsr build_tilt_gate_chars_h                        // $6d24
     rts                                         // $6d27
 
 // ----------------------------------------------------------------------------

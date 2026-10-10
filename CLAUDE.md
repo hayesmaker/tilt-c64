@@ -17,6 +17,7 @@
   (`VICE_ROMS` env var overrides).
 * Game facts: walls kill (sprite 3 vs background collision), fire opens gates for a moment,
   POWER = energy (clunks drain it, BACKUP = last reserve), exit hole = sprites 6/7.
+  Gate mask bit = gate KIND (1 fire gate, 0 tilt gate opened by tilting against it), not presence.
   Confirmed by the user: 1 level = mazes 0-3, then the mazes repeat with a bigger ball and
   another gate ("trap") layout; floor marks turn into power; end-of-maze bonus is x2 when the
   maze was finished. The $FB/$FE "special cells" are unconfirmed.

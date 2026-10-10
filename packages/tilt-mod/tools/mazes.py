@@ -21,8 +21,10 @@ Maze set JSON:
                                         colour RAM values: 8-15 = multicolour characters,
                                         shown in colour value AND 7
       "gates": [ {"col": c, "row": r, "orientation": 0-3} x 8 ],
-      "gate_masks": ["10110111", ...]   5 rows (levels 1, 2, 3, 4, 5+): which gates
-                                        exist, gate 8 ... gate 1 (left to right)
+      "gate_masks": ["10110111", ...]   5 rows (levels 1, 2, 3, 4, 5+), one bit per gate,
+                                        gate 8 ... gate 1 (left to right):
+                                        1 = fire gate (opened with fire),
+                                        0 = tilt gate (opened by tilting against it)
   } ... ]
 }
 A level plays the mazes in order; the cartridge holds at most MAX_MAZES.

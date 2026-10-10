@@ -107,12 +107,13 @@ function drawOverlay() {
     }
   }
   const m = maze();
-  // gates: the selected one highlighted, the ones off on this level dashed
+  // gates: fire gates yellow, tilt gates cyan (dashed); the selected one bold
   m.gates.forEach((g, k) => {
-    const on = (m.gate_masks[view.levelRow] >> k) & 1;
+    const fire = (m.gate_masks[view.levelRow] >> k) & 1;
     const s = gateSize(g.orientation);
-    octx.setLineDash(on ? [] : [4, 4]);
-    octx.strokeStyle = k === gateSel ? '#ffe066' : on ? 'rgba(255,224,102,0.5)' : 'rgba(255,224,102,0.35)';
+    octx.setLineDash(fire ? [] : [4, 3]);
+    const rgb = fire ? '255,224,102' : '102,217,255';
+    octx.strokeStyle = `rgba(${rgb},${k === gateSel ? 1 : 0.5})`;
     octx.lineWidth = k === gateSel ? 2 : 1;
     octx.strokeRect(...cellRect(g.col, g.row, s, s));
     octx.fillStyle = octx.strokeStyle;
@@ -289,10 +290,10 @@ function refreshInspector() {
     const tr = document.createElement('tr');
     if (k === gateSel) tr.className = 'sel';
     const masks = m.gate_masks.map((mask, row) =>
-      `<td><input type="checkbox" data-row="${row}" ${(mask >> k) & 1 ? 'checked' : ''} title="gate ${k + 1} on level ${row === 4 ? '5+' : row + 1}"></td>`).join('');
+      `<td><input type="checkbox" data-row="${row}" ${(mask >> k) & 1 ? 'checked' : ''} title="gate ${k + 1} on level ${row === 4 ? '5+' : row + 1}: ticked = fire gate, unticked = tilt gate"></td>`).join('');
     tr.innerHTML = `<td><input type="radio" name="gsel" ${k === gateSel ? 'checked' : ''}></td><td>${k + 1}</td>
       <td>${g.col},${g.row}</td>
-      <td><select>${['straight A', 'straight B', 'diagonal A', 'diagonal B'].map((n, o) => `<option value="${o}" ${o === g.orientation ? 'selected' : ''}>${n}</option>`).join('')}</select></td>${masks}`;
+      <td><select>${['vertical', 'horizontal', 'diagonal A', 'diagonal B'].map((n, o) => `<option value="${o}" ${o === g.orientation ? 'selected' : ''}>${n}</option>`).join('')}</select></td>${masks}`;
     tr.querySelector<HTMLInputElement>('input[type=radio]')!.onchange = () => {
       gateSel = k;
       setTool('gate');
@@ -379,7 +380,7 @@ function download(name: string, data: BlobPart, type: string) {
 }
 
 /** Build and play: the whole set, or only the current maze (a one-maze set that
- *  starts on the level shown under "Gates of level"). */
+ *  starts on the level shown under "Level"). */
 let lastPlay: 'set' | 'maze' = 'set';
 async function buildAndPlay(what: 'set' | 'maze' = lastPlay) {
   lastPlay = what;

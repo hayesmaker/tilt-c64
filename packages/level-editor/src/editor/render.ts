@@ -2,7 +2,7 @@
 // run-time font for a perspective shift, the colours the game puts in colour
 // RAM, closed gates, the exit hole and the ball.
 
-import { gateBlock, SPRITE, type Assets } from '../model/assets';
+import { gateBlock, gateColourCells, SPRITE, tiltGateBar, type Assets } from '../model/assets';
 import { COLS, ROWS, type Maze } from '../model/maze';
 
 export const PALETTE: [number, number, number][] = [
@@ -19,14 +19,14 @@ const GATE_COLOUR = 15;
 export interface RenderOptions {
   shiftX: number;
   shiftY: number;
-  /** gate mask row (level 1-5+) whose gates are drawn */
+  /** gate mask row (level 1-5+): which gates are fire gates and which tilt gates */
   levelRow: number;
-  /** draw gates that are off on this level as an outline (overlay) */
+  /** draw the exit hole and the ball */
   sprites: boolean;
 }
 
-/** Colour RAM as the game fills it: floor colour, frame colour on the frame,
- *  colour 15 on gates. */
+/** Colour RAM as the game fills it: floor colour, and frame colour on the frame
+ *  (gates: see renderMaze). */
 export function colourMap(m: Maze): number[][] {
   const col = Array.from({ length: ROWS }, () => new Array(COLS).fill(m.floor_colour));
   for (let r = 2; r < ROWS; r++) col[r][0] = col[r][38] = m.frame_colour;
@@ -40,15 +40,18 @@ export function renderMaze(ctx: CanvasRenderingContext2D, a: Assets, m: Maze, o:
   const font = a.fonts[o.shiftX][o.shiftY];
   const screen = m.screen.map((r) => r.slice());
   const colour = colourMap(m);
-  // closed gates of this level, drawn over the screen like draw_gates does
+  // gates of this level, as the game draws them: mask bit 1 = fire gate (draw_gates,
+  // closed), bit 0 = tilt gate (a 3-cell bar, draw_tilt_gates); colour_gates paints
+  // the 3 bar cells of every gate colour 15
+  const set = (r: number, c: number, ch: number) => {
+    if (r >= 0 && r < ROWS && c >= 0 && c < COLS) screen[r][c] = ch;
+  };
   m.gates.forEach((g, k) => {
-    if (!((m.gate_masks[o.levelRow] >> k) & 1)) return;
-    for (const [dc, dr, ch] of gateBlock(a, g.orientation)) {
+    const fire = (m.gate_masks[o.levelRow] >> k) & 1;
+    for (const [dc, dr, ch] of fire ? gateBlock(a, g.orientation) : tiltGateBar(a, g.orientation)) set(g.row + dr, g.col + dc, ch);
+    for (const [dc, dr] of gateColourCells(a, g.orientation)) {
       const r = g.row + dr, c = g.col + dc;
-      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
-        screen[r][c] = ch;
-        colour[r][c] = GATE_COLOUR;
-      }
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) colour[r][c] = GATE_COLOUR;
     }
   });
   // the board is fine scrolled like the game does it ($D016 / $D011); rows 0-1 (status) are not

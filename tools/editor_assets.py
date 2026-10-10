@@ -38,7 +38,7 @@ def main():
     holes = {}
     for y in range(9):
         for x in range(9):
-            for _ in range(4):                    # a few frames: the main loop rebuilds the font
+            for _ in range(6):                    # ...and closes the tilt gate bars (close_tilt_gates)                    # a few frames: the main loop rebuilds the font
                 c.m[TILT_ENABLED] = 0
                 c.m[STEERING_ON] = 0
                 c.m[0xcf00] = c.m[0xcf01] = 0          # ball_vx / ball_vy: keep the ball still
@@ -55,6 +55,9 @@ def main():
         'sprite_pointers': list(c.m[0x07f8:0x0800]),
         'gate_cells': list(c.m[GATE_CELLS:GATE_CELLS + 64]),
         'gate_chars': list(c.m[GATE_CHARS:GATE_CHARS + 252]),
+        # tilt gates: the 3 bar cells per orientation (gate_bar_cells) and their characters
+        'gate_bar_cells': list(c.m[0x41f0:0x41fc]),
+        'tilt_gate_chars': list(c.m[0x6832:0x6838]),
         'vic': {'bg1': c.io[0x22] & 15, 'bg2': c.io[0x23] & 15},
         # hardware fine scroll per tilt level (tilt_level_shift_x / _y): $D016 / $D011 bits 0-2
         'scroll_x': list(c.m[0x0dbc:0x0dc5]),
