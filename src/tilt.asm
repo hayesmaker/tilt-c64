@@ -57,19 +57,19 @@
 .label tilt_dy                        = $cf08   // tilt direction Y: -1 up, 0, +1 down
 .label tilt_shift_x                   = $cf09   // perspective shift of the maze 0-8 in X (4 = level)
 .label tilt_shift_y                   = $cf0a   // perspective shift of the maze 0-8 in Y
-.label cf0b                           = $cf0b
-.label cf0c                           = $cf0c
+.label tilt_shift_x_old               = $cf0b
+.label tilt_shift_y_old               = $cf0c
 .label irq_step                       = $cf0d   // raster IRQ chain step 0-11
-.label cf0e                           = $cf0e
-.label cf0f                           = $cf0f
+.label fine_scroll_x                  = $cf0e   // fine scroll X for the board ($D016 bits 0-2), from the tilt
+.label fine_scroll_y                  = $cf0f   // fine scroll Y for the board ($D011 bits 0-2), from the tilt
 .label roll_volume                    = $cf10
 .label roll_volume_old                = $cf11
 .label roll_sweep_dir                 = $cf12
 .label roll_sweep                     = $cf13
 .label clunk_state                    = $cf15
 .label clunk_toggle                   = $cf16
-.label cf17                           = $cf17
-.label cf18                           = $cf18
+.label flash_phase                    = $cf17
+.label flash_step                     = $cf18
 .label wait_counter                   = $cf1a   // frames left to wait (wait_frames)
 .label diag_hold_count                = $cf1b
 .label diag_hold_state                = $cf1c
@@ -89,19 +89,19 @@
 .label sound_tilt_dx                  = $cf2b
 .label sound_tilt_dy                  = $cf2c
 .label maze                           = $cf2d   // maze on screen: 0-3
-.label switch_frame                   = $cf2e
-.label switch_frame_old               = $cf2f
-.label switch_count                   = $cf30
-.label switch_index                   = $cf31
-.label switch_gfx_offset              = $cf32
-.label switch_anim                    = $cf33   // fire pressed: switch animation counter (0 = idle)
+.label gate_frame                     = $cf2e
+.label gate_frame_old                 = $cf2f
+.label gate_count                     = $cf30
+.label gate_index                     = $cf31
+.label gate_gfx_offset                = $cf32
+.label gate_anim                      = $cf33   // fire pressed: gate animation counter (0 = idle)
 .label fire_latch                     = $cf34
 .label tilt_angle_x                   = $cf35   // tilt angle X 0-255 ($80 = level), eases toward tilt_dx
 .label tilt_angle_y                   = $cf36   // tilt angle Y 0-255 ($80 = level), eases toward tilt_dy
 .label tilt_level_x                   = $cf37   // tilt angle X as 0-8
 .label tilt_level_y                   = $cf38   // tilt angle Y as 0-8
-.label cf39                           = $cf39
-.label switch_page_add                = $cf3a
+.label mark_cell_count                = $cf39
+.label gate_page_add                  = $cf3a
 .label level                          = $cf3b   // level number (0 = level 1)
 .label shine_x                        = $cf3c
 .label shine_y                        = $cf3d
@@ -115,13 +115,13 @@
 .label slide_state                    = $cf45
 .label score                          = $cf47   // score, 3 bytes BCD (low byte first)
 .label ball_in_hole                   = $cf4d   // set when the ball dropped into the exit hole
-.label ball_lost                      = $cf4e   // set when the ball was lost
+.label ball_lost                      = $cf4e   // set when the ball touched a wall (sprite-background collision)
 .label steering_on                    = $cf50
-.label cf51                           = $cf51
-.label cf52                           = $cf52
-.label cf53                           = $cf53
+.label fire_enabled                   = $cf51   // fire flips the gates
+.label controls_enabled               = $cf52   // read the joystick / keys each frame
+.label tilt_enabled                   = $cf53   // tilt angles follow the controls
 .label controls                       = $cf54   // controls: joystick bits, active low (0 up 1 down 2 left 3 right 4 fire)
-.label cf55                           = $cf55
+.label mark_count                     = $cf55   // number of floor marks in the list at $7800/$7900
 .label tilt_rate                      = $cf57   // how fast the tilt angles follow the controls
 .label scroll_score_step              = $cf59
 .label scroll_hiscore_step            = $cf5a
@@ -143,19 +143,60 @@
 .label fall_timer                     = $cf6d
 .label fall_delay                     = $cf6e
 .label fall_freq                      = $cf6f
+.label fall_freq_hi                   = $cf70
 .label fall_freq_step                 = $cf71
+.label fall_freq_step_hi              = $cf72
+.label ball_waiting                   = $cf73   // ball has appeared, waiting for fire
+.label glint_on                       = $cf74
+.label blip_sound                     = $cf75
 .label title_mode                     = $cf76   // 1 while the title screen runs (selects the IRQ frame work)
+.label title_rock_dir                 = $cf77
+.label title_rock_pause               = $cf78
+.label new_ball_size                  = $cf79   // new level: the ball changes size (dissolve and reappear)
+.label roll_sound_off                 = $cf7a   // no rolling sound (another sound is playing)
+.label sign_x_left                    = $cf7f
+.label sign_x_right                   = $cf80
+.label sign_y                         = $cf81
+.label sign_spin_speed                = $cf82
+.label sign_spin                      = $cf83
+.label level_sign_on                  = $cf84   // level sign sprites on screen
+.label sign_sound_on                  = $cf85
+.label slide_noise_old                = $cf86
 .label demo_mode                      = $cf87   // demo mode (F7)
 .label demo_playing                   = $cf88
+.label cf89_unused                    = $cf89   // never set: would start a game at level 8 like the demo
 .label demo_step_frames               = $cf8a
 .label demo_step                      = $cf8b
-.label switch_mask                    = $cf9b   // bit mask: which of the 8 switch blocks of the maze are on
+.label controls_copy                  = $cf8c
+.label demo_stops_at_end              = $cf8d   // demo recording stops when the ball is in the hole / lost
+.label title_fine_scroll              = $cf8f
+.label title_text_pos                 = $cf90
+.label frame_flash_sides              = $cf91
+.label frame_flash_corner             = $cf92
+.label shine_state                    = $cf93   // 1 = shine on the ball, 2 = it just left (plays a sound)
+.label edge_highlight_on              = $cf94
+.label hole_wrap                      = $cf95
+.label gate_hit_timer                 = $cf96
+.label gate_hit_index                 = $cf98
+.label gate_hit_frame                 = $cf99
+.label count_marks_delay              = $cf9a
+.label gate_mask                      = $cf9b   // bit mask: which of the 8 gate of the maze are on
 .label count_marks_on                 = $cf9c
+.label bumper_timer                   = $cf9d
+.label bumper_index                   = $cf9e
 .label bonus_left                     = $cfa0
+.label shaking                        = $cfa1   // board is shaking (higher clunk sound)
 .label ball_size                      = $cfa2
 .label marking_on                     = $cfa3
+.label shake_count                    = $cfa4
+.label bonus_sound_on                 = $cfa5
+.label ball_frame_changed             = $cfa7
+.label two_tone_timer                 = $cfa8
+.label two_tone_step                  = $cfa9
 .label hole_spr_x                     = $cfab
 .label hole_spr_y                     = $cfac
+.label dissolve_step                  = $cfad
+.label dissolve_time                  = $cfae
 .label speed_class                    = $cfaf   // speed class 0-4 (level number, at most 4)
 .label screen_on                      = $cfb0   // $D011 bit 4 (screen on $18 / off $08), used by the IRQ
 .label power_lo                       = $cfb1   // power, fraction
@@ -165,7 +206,17 @@
 .label power_drain_on                 = $cfb5
 .label backup_power                   = $cfb6
 .label nmi_count                      = $cfb7
-.label cfb8                           = $cfb8
+.label no_restart                     = $cfb8   // F1 restart not allowed
+.label backup_flash_step              = $cfb9
+.label backup_alarm_freq              = $cfba
+.label bonus_flash                    = $cfbb
+.label bg2_restore_timer              = $cfbc
+.label diagonal_sound_timer           = $cfbd
+.label title_delay                    = $cfbe
+.label backup_allowed                 = $cfbf   // BACKUP power still available for this ball
+.label m_key_up                       = $cfc8
+.label jingle_timer                   = $cfc9
+.label title_idle                     = $cfca   // title frames without input (16 bit): demo after $0F03
 .label VIC_SPR0_X                     = $d000
 .label VIC_SPR0_Y                     = $d001
 .label VIC_SPR1_X                     = $d002
@@ -497,20 +548,28 @@ L08a0:
     ldx zp_fd                                   // $08ab
     ldy zp_fe                                   // $08ad
     rts                                         // $08af
+
+// ----------------------------------------------------------------------------
+// Leftover of the developer's BASIC loader (tokenized, $93 = LOAD):
+//   LOAD "CHAR35-42.MOD",8,1   LOAD "CHAR100-119.MOD",8,1   LOAD "TABLES.MOD",8,1
+//   LOAD "SPRITES.MOD",8,1     LOAD "COSINE.MOD",8,1        LOAD "DEMO.MOD",8,1
+//   LOAD "MUSIC.MOD",8,1
+// The game was put together from these modules. Not used.
+// ----------------------------------------------------------------------------
 basic_leftovers:
-    .byte $3c,$00,$93,$22,$43,$48,$41,$52,$33,$35,$2d,$34,$32,$2e,$4d,$4f  // $08b0
-    .byte $44,$22,$2c,$38,$2c,$31,$00,$e2,$08,$46,$00,$93,$22,$43,$48,$41  // $08c0
-    .byte $52,$31,$30,$30,$2d,$31,$31,$39,$2e,$4d,$4f,$44,$22,$2c,$38,$2c  // $08d0
-    .byte $31,$00,$f8,$08,$50,$00,$93,$22,$54,$41,$42,$4c,$45,$53,$2e,$4d  // $08e0
-    .byte $4f,$44,$22,$2c,$38,$2c,$31,$00,$0f,$09,$5a,$00,$93,$22,$53,$50  // $08f0
-    .byte $52,$49,$54,$45,$53,$2e,$4d,$4f,$44,$22,$2c,$38,$2c,$31,$00,$25  // $0900
-    .byte $09,$64,$00,$93,$22,$43,$4f,$53,$49,$4e,$45,$2e,$4d,$4f,$44,$22  // $0910
-    .byte $2c,$38,$2c,$31,$00,$39,$09,$6e,$00,$93,$22,$44,$45,$4d,$4f,$2e  // $0920
-    .byte $4d,$4f,$44,$22,$2c,$38,$2c,$31,$00,$4e,$09,$73,$00,$93,$22,$4d  // $0930
-    .byte $55,$53,$49,$43,$2e,$4d,$4f,$44,$22,$2c,$38,$2c,$31,$00,$54,$09  // $0940
-    .byte $78,$00,$80,$00,$00,$00,$42,$00,$84,$30,$00,$00,$00,$00,$00,$00  // $0950
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$cf  // $0960
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$40,$00,$00,$00,$00,$00  // $0970
+    .byte $3c,$00,$93,$22,$43,$48,$41,$52,$33,$35,$2d,$34,$32,$2e,$4d,$4f  // $08b0  "<.."CHAR35-42.MO"
+    .byte $44,$22,$2c,$38,$2c,$31,$00,$e2,$08,$46,$00,$93,$22,$43,$48,$41  // $08c0  "D",8,1...F.."CHA"
+    .byte $52,$31,$30,$30,$2d,$31,$31,$39,$2e,$4d,$4f,$44,$22,$2c,$38,$2c  // $08d0  "R100-119.MOD",8,"
+    .byte $31,$00,$f8,$08,$50,$00,$93,$22,$54,$41,$42,$4c,$45,$53,$2e,$4d  // $08e0  "1...P.."TABLES.M"
+    .byte $4f,$44,$22,$2c,$38,$2c,$31,$00,$0f,$09,$5a,$00,$93,$22,$53,$50  // $08f0  "OD",8,1...Z.."SP"
+    .byte $52,$49,$54,$45,$53,$2e,$4d,$4f,$44,$22,$2c,$38,$2c,$31,$00,$25  // $0900  "RITES.MOD",8,1.%"
+    .byte $09,$64,$00,$93,$22,$43,$4f,$53,$49,$4e,$45,$2e,$4d,$4f,$44,$22  // $0910  ".d.."COSINE.MOD""
+    .byte $2c,$38,$2c,$31,$00,$39,$09,$6e,$00,$93,$22,$44,$45,$4d,$4f,$2e  // $0920  ",8,1.9.n.."DEMO."
+    .byte $4d,$4f,$44,$22,$2c,$38,$2c,$31,$00,$4e,$09,$73,$00,$93,$22,$4d  // $0930  "MOD",8,1.N.s.."M"
+    .byte $55,$53,$49,$43,$2e,$4d,$4f,$44,$22,$2c,$38,$2c,$31,$00,$54,$09  // $0940  "USIC.MOD",8,1.T."
+    .byte $78,$00,$80,$00,$00,$00,$42,$00,$84,$30,$00,$00,$00,$00,$00,$00  // $0950  "x.....B..0......"
+    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$cf  // $0960  "................"
+    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$40,$00,$00,$00,$00,$00  // $0970  "..........@....."
 
 // ----------------------------------------------------------------------------
 // Game start. $0984 (SYS 2436) is a developer entry: the game then runs
@@ -536,8 +595,8 @@ L0999:
     sta dev_maze                                // $099b
     lda #$00                                    // $099e
     sta hiscore                                 // $09a0
-    sta $cefc                                   // $09a3
-    sta $cefd                                   // $09a6
+    sta hiscore+1                               // $09a3
+    sta hiscore+2                               // $09a6
     lda #$01                                    // $09a9
     sta cefa_flag                               // $09ab
     ldx #$2f                                    // $09ae
@@ -569,12 +628,12 @@ tamper_glyph:
 // position delta
 // ----------------------------------------------------------------------------
 velocity_to_delta:
-    ldx #$01                                    // $09d8
+    ldx #$01                                    // $09d8  C=1: shift count 2 (velocity * 4)
     sta zp_fb                                   // $09da
-    and #$80                                    // $09dc
+    and #$80                                    // $09dc  remember the sign
     sta zp_fd                                   // $09de
     bpl L09eb                                   // $09e0
-    lda zp_fb                                   // $09e2
+    lda zp_fb                                   // $09e2  work with |velocity|
     eor #$ff                                    // $09e4
     clc                                         // $09e6
     adc #$01                                    // $09e7
@@ -582,12 +641,12 @@ velocity_to_delta:
 L09eb:
     lda #$00                                    // $09eb
 L09ed:
-    asl zp_fb                                   // $09ed
+    asl zp_fb                                   // $09ed  shift into zp_fb (low) and A (high)
     rol                                         // $09ef
     dex                                         // $09f0
     bpl L09ed                                   // $09f1
     sta zp_fc                                   // $09f3
-    lda zp_fd                                   // $09f5
+    lda zp_fd                                   // $09f5  negative: negate the 16 bit result
     bpl L0a0a                                   // $09f7
     lda zp_fb                                   // $09f9
     eor #$ff                                    // $09fb
@@ -606,7 +665,7 @@ L0a0a:
 // Y 16 bit: frac, position)
 // ----------------------------------------------------------------------------
 move_ball:
-    lda ball_vx                                 // $0a0b
+    lda ball_vx                                 // $0a0b  X: frac/low += velocity * 4
     sec                                         // $0a0e
     jsr velocity_to_delta                       // $0a0f
     lda ball_x_frac                             // $0a12
@@ -616,7 +675,7 @@ move_ball:
     lda ball_x                                  // $0a1b
     adc zp_fc                                   // $0a1e
     sta ball_x                                  // $0a20
-    lda zp_fc                                   // $0a23
+    lda zp_fc                                   // $0a23  carry into bit 8 (sign of the delta decides up or down)
     bcs L0a2d                                   // $0a25
     bpl L0a34                                   // $0a27
     ldx #$00                                    // $0a29
@@ -627,7 +686,7 @@ L0a2d:
 L0a31:
     stx ball_x_hi                               // $0a31
 L0a34:
-    lda ball_vy                                 // $0a34
+    lda ball_vy                                 // $0a34  Y: frac/position += velocity * 4
     sec                                         // $0a37
     jsr velocity_to_delta                       // $0a38
     lda ball_y_frac                             // $0a3b
@@ -646,13 +705,13 @@ L0a34:
 // direction a little early does not stop the diagonal roll.
 // ----------------------------------------------------------------------------
 steer_ball:
-    lda tilt_dx                                 // $0a4d
+    lda tilt_dx                                 // $0a4d  remember the old tilt direction
     sta tilt_dx_old                             // $0a50
     lda tilt_dy                                 // $0a53
     sta tilt_dy_old                             // $0a56
     lda controls                                // $0a59
     sta zp_fb                                   // $0a5c
-    ldy #$03                                    // $0a5e
+    ldy #$03                                    // $0a5e  X = number of directions pressed
     ldx #$00                                    // $0a60
 L0a62:
     lsr                                         // $0a62
@@ -661,7 +720,7 @@ L0a62:
 L0a66:
     dey                                         // $0a66
     bpl L0a62                                   // $0a67
-    cpx #$02                                    // $0a69
+    cpx #$02                                    // $0a69  diagonal: remember it
     bne L0a94                                   // $0a6b
     lda #$00                                    // $0a6d
     sta diag_hold_count                         // $0a6f
@@ -669,19 +728,19 @@ L0a66:
     sta diag_tilt_dx                            // $0a75
     lda tilt_dy                                 // $0a78
     sta diag_tilt_dy                            // $0a7b
-    lda diag_hold_state                         // $0a7e
+    lda diag_hold_state                         // $0a7e  held long enough: diagonal sound once
     bmi L0a94                                   // $0a81
     clc                                         // $0a83
     adc #$01                                    // $0a84
     cmp #$05                                    // $0a86
     bne L0a91                                   // $0a88
     lda #$02                                    // $0a8a
-    sta $cfbd                                   // $0a8c
+    sta diagonal_sound_timer                    // $0a8c
     lda #$80                                    // $0a8f
 L0a91:
     sta diag_hold_state                         // $0a91
 L0a94:
-    cpx #$01                                    // $0a94
+    cpx #$01                                    // $0a94  one direction after a diagonal: keep the diagonal for 8 frames
     bne L0aa7                                   // $0a96
     lda diag_hold_state                         // $0a98
     bpl L0abc                                   // $0a9b
@@ -690,7 +749,7 @@ L0a94:
     cmp #$08                                    // $0aa3
     beq L0abc                                   // $0aa5
 L0aa7:
-    cpx #$00                                    // $0aa7
+    cpx #$00                                    // $0aa7  no direction: restore a recent diagonal
     bne L0ac4                                   // $0aa9
     lda diag_hold_count                         // $0aab
     beq L0abc                                   // $0aae
@@ -703,38 +762,38 @@ L0abc:
     sta diag_hold_count                         // $0abe
     sta diag_hold_state                         // $0ac1
 L0ac4:
-    cpx #$00                                    // $0ac4
+    cpx #$00                                    // $0ac4  set tilt_dx / tilt_dy from the control bits
     beq L0afa                                   // $0ac6
     lda #$00                                    // $0ac8
     sta tilt_dx                                 // $0aca
     sta tilt_dy                                 // $0acd
-    lda zp_fb                                   // $0ad0
+    lda zp_fb                                   // $0ad0  left (bit 2)
     and #$04                                    // $0ad2
     bne L0ada                                   // $0ad4
     ldx #$ff                                    // $0ad6
     bne L0ae2                                   // $0ad8
 L0ada:
-    lda zp_fb                                   // $0ada
+    lda zp_fb                                   // $0ada  right (bit 3)
     and #$08                                    // $0adc
     bne L0ae5                                   // $0ade
     ldx #$01                                    // $0ae0
 L0ae2:
     stx tilt_dx                                 // $0ae2
 L0ae5:
-    lda zp_fb                                   // $0ae5
+    lda zp_fb                                   // $0ae5  up (bit 0)
     and #$01                                    // $0ae7
     bne L0aef                                   // $0ae9
     ldx #$ff                                    // $0aeb
     bne L0af7                                   // $0aed
 L0aef:
-    lda zp_fb                                   // $0aef
+    lda zp_fb                                   // $0aef  down (bit 1)
     and #$02                                    // $0af1
     bne L0afa                                   // $0af3
     ldx #$01                                    // $0af5
 L0af7:
     stx tilt_dy                                 // $0af7
 L0afa:
-    ldx tilt_dx                                 // $0afa
+    ldx tilt_dx                                 // $0afa  target speeds for X and Y
     ldy tilt_dy                                 // $0afd
     jsr target_speed                            // $0b00
     sta zp_fb                                   // $0b03
@@ -742,7 +801,7 @@ L0afa:
     ldy tilt_dx                                 // $0b08
     jsr target_speed                            // $0b0b
     sta zp_fc                                   // $0b0e
-    lda tilt_dx                                 // $0b10
+    lda tilt_dx                                 // $0b10  direction changed: new acceleration split
     cmp tilt_dx_old                             // $0b13
     bne L0b20                                   // $0b16
     lda tilt_dy                                 // $0b18
@@ -751,9 +810,9 @@ L0afa:
 L0b20:
     jsr calc_accel                              // $0b20
 L0b23:
-    lda steering_on                             // $0b23
+    lda steering_on                             // $0b23  steering off while the ball appears / drops
     beq L0b44                                   // $0b26
-    lda ball_vx                                 // $0b28
+    lda ball_vx                                 // $0b28  velocity -> target speed by the acceleration
     ldx zp_fb                                   // $0b2b
     ldy accel_x                                 // $0b2d
     jsr approach                                // $0b30
@@ -767,11 +826,12 @@ L0b44:
     rts                                         // $0b44
 
 // ----------------------------------------------------------------------------
-// Params: X, Y = tilt direction (-1/0/1)
-// Returns: A = target speed for this direction and speed class
+// Params: X = tilt direction of this axis, Y = of the other axis (-1/0/1)
+// Returns: A = target velocity + $80 for this axis and speed class.
+// Diagonal tilts give a lower speed per axis (e.g. 68 instead of 96).
 // ----------------------------------------------------------------------------
 target_speed:
-    iny                                         // $0b45
+    iny                                         // $0b45  other axis -1/+1 -> row 0 (diagonal), 0 -> row 1
     cpy #$02                                    // $0b46
     bne L0b4c                                   // $0b48
     ldy #$00                                    // $0b4a
@@ -783,7 +843,7 @@ L0b4c:
     sec                                         // $0b51
     adc zp_fd                                   // $0b52
     sta zp_fd                                   // $0b54
-    lda speed_class                             // $0b56
+    lda speed_class                             // $0b56  8 entries per speed class
     asl                                         // $0b59
     asl                                         // $0b5a
     asl                                         // $0b5b
@@ -794,8 +854,8 @@ L0b4c:
     rts                                         // $0b63
 
 // ----------------------------------------------------------------------------
-// Params: A = value, X = target, Y = step
-// Returns: A moved by at most Y toward X (all signed)
+// Params: A = velocity (signed), X = target velocity + $80, Y = step
+// Returns: A moved by at most Y toward the target
 // ----------------------------------------------------------------------------
 approach:
     stx zp_fd                                   // $0b64
@@ -822,9 +882,16 @@ L0b85:
     sec                                         // $0b85
     sbc #$80                                    // $0b86
     rts                                         // $0b88
+
+// ----------------------------------------------------------------------------
+// Target velocities + $80, 8 bytes per speed class:
+// X = -1, 0, +1 (diagonal), unused, X = -1, 0, +1 (straight), unused
+// ----------------------------------------------------------------------------
 target_speed_table:
-    .byte $3c,$80,$c4,$00,$20,$80,$e0,$00,$36,$80,$ca,$00,$18,$80,$e8,$00  // $0b89
-    .byte $31,$80,$cf,$00,$10,$80,$f0,$00,$2b,$80,$d5,$00,$08,$80,$f8,$00  // $0b99
+    .byte $3c,$80,$c4,$00,$20,$80,$e0,$00       // $0b89
+    .byte $36,$80,$ca,$00,$18,$80,$e8,$00       // $0b91
+    .byte $31,$80,$cf,$00,$10,$80,$f0,$00       // $0b99
+    .byte $2b,$80,$d5,$00,$08,$80,$f8,$00       // $0ba1
     .byte $26,$80,$da,$00,$00,$80,$ff,$00       // $0ba9
 
 // ----------------------------------------------------------------------------
@@ -1083,7 +1150,7 @@ L0d70:
 L0d7a:
     stx tilt_level_x                            // $0d7a
     lda tilt_level_shift_x,x                    // $0d7d
-    sta cf0e                                    // $0d80
+    sta fine_scroll_x                           // $0d80
     lda tilt_angle_y                            // $0d83
     sec                                         // $0d86
     sbc #$02                                    // $0d87
@@ -1102,7 +1169,7 @@ L0d90:
 L0d9a:
     stx tilt_level_y                            // $0d9a
     lda tilt_level_shift_y,x                    // $0d9d
-    sta cf0f                                    // $0da0
+    sta fine_scroll_y                           // $0da0
     rts                                         // $0da3
 pick_hole_sprite:
     ldx tilt_shift_y                            // $0da4
@@ -2742,7 +2809,7 @@ tilt_sound_freq:
     adc speed_class                             // $1a6d
     clc                                         // $1a70
     adc #$01                                    // $1a71
-    ldy $cfa1                                   // $1a73
+    ldy shaking                                 // $1a73
     beq L1a7b                                   // $1a76
     clc                                         // $1a78
     adc #$02                                    // $1a79
@@ -2784,7 +2851,10 @@ L1ab5:
 // ----------------------------------------------------------------------------
 // Read the controls: joystick in port 2 ANDed with keys on the keyboard.
 // Returns A = joystick style bits, active low: 0 up, 1 down, 2 left,
-// 3 right, 4 fire. SPACE is fire; see the comments for the direction keys.
+// 3 right, 4 fire. Keys, one "diamond" for each hand:
+//     right hand:  * up   ; left   RETURN right   right SHIFT down
+//     left hand:   Q / CTRL up   RUN/STOP left   A right   left SHIFT down
+//     SPACE fire
 // Pressing two opposite directions cancels both.
 // ----------------------------------------------------------------------------
 read_controls:
@@ -2792,7 +2862,7 @@ read_controls:
     sta CIA1_DDRA                               // $1ab8
     lda #$00                                    // $1abb
     sta zp_ff                                   // $1abd
-    sec                                         // $1abf  SPACE: fire
+    sec                                         // $1abf  fire: SPACE
     lda #$7f                                    // $1ac0
     sta CIA1_PRA                                // $1ac2
     lda CIA1_PRB                                // $1ac5
@@ -2801,7 +2871,7 @@ read_controls:
     clc                                         // $1acc
 L1acd:
     rol zp_ff                                   // $1acd
-    sec                                         // $1acf  RETURN or A
+    sec                                         // $1acf  right: RETURN or A
     lda #$fe                                    // $1ad0
     sta CIA1_PRA                                // $1ad2
     lda CIA1_PRB                                // $1ad5
@@ -2816,7 +2886,7 @@ L1ae8:
     clc                                         // $1ae8
 L1ae9:
     rol zp_ff                                   // $1ae9
-    sec                                         // $1aeb  ; or RUN/STOP
+    sec                                         // $1aeb  left: ; or RUN/STOP
     lda #$bf                                    // $1aec
     sta CIA1_PRA                                // $1aee
     lda CIA1_PRB                                // $1af1
@@ -2831,7 +2901,7 @@ L1b04:
     clc                                         // $1b04
 L1b05:
     rol zp_ff                                   // $1b05
-    sec                                         // $1b07  right SHIFT or left SHIFT
+    sec                                         // $1b07  down: right SHIFT or left SHIFT
     lda #$bf                                    // $1b08
     sta CIA1_PRA                                // $1b0a
     lda CIA1_PRB                                // $1b0d
@@ -2846,7 +2916,7 @@ L1b20:
     clc                                         // $1b20
 L1b21:
     rol zp_ff                                   // $1b21
-    sec                                         // $1b23  * (or = and ; ... see the bits)
+    sec                                         // $1b23  up: *, or Q / CTRL (ignored while ; or right SHIFT is down)
     lda #$bf                                    // $1b24
     sta CIA1_PRA                                // $1b26
     lda CIA1_PRB                                // $1b29
@@ -2987,6 +3057,9 @@ corner_pixels:
 // ----------------------------------------------------------------------------
 // Maze 0 screen (40 x 25 characters) as loaded. Saved to $A000 at
 // start-up; after that $2000-$27FF is the character set, built at run time.
+// In the mazes: $00 = wall top (multicolour %10/%11 pixels: foreground, so
+// the ball sprite collides with it), $20 = floor (background), the edge
+// characters around the walls are rebuilt for every tilt.
 // ----------------------------------------------------------------------------
     .byte $ca,$cb,$cc,$cd,$ce,$e6,$e7,$e8,$e9,$ea,$eb,$b4,$cf,$d0,$d1,$d2,$d3,$20,$20,$20,$20,$20,$20,$b4,$d4,$d5,$d6,$d7,$d8,$ee,$ef,$b4,$d9,$da,$f0,$f1,$f2,$f3,$f4,$f5  // $2000
     .byte $20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20,$20  // $2028
@@ -4558,17 +4631,18 @@ L38c2:
     rts                                         // $38ce
 
 // ----------------------------------------------------------------------------
-// Draw the switch blocks of the maze.
-// C = 0: draw the switches whose state changed (switch_frame) into the
-//        screen buffer at $7C00
-// C = 1: (re)draw all switches set in the level's mask
+// Draw the gates (the "gates" of the maze: bars across the corridors).
+// Fire flips them open for a moment (fire_gates).
+// C = 0: redraw the gates on the screen when gate_frame changed
+// C = 1: take the gate mask for the level and maze, draw all of them into
+//        the screen buffer at $7C00
 // ----------------------------------------------------------------------------
-draw_switches:
+draw_gates:
     lda #$00                                    // $38cf
     bcc L38d5                                   // $38d1
     lda #$78                                    // $38d3
 L38d5:
-    sta switch_page_add                         // $38d5
+    sta gate_page_add                           // $38d5
     bcc L38fa                                   // $38d8
     lda level                                   // $38da
     cmp #$04                                    // $38dd
@@ -4580,16 +4654,16 @@ L38e3:
     clc                                         // $38e5
     adc maze                                    // $38e6
     tax                                         // $38e9
-    lda switch_masks_by_level,x                 // $38ea
-    sta switch_mask                             // $38ed
+    lda gate_masks_by_level,x                   // $38ea
+    sta gate_mask                               // $38ed
     lda #$00                                    // $38f0
-    sta switch_gfx_offset                       // $38f2
-    sta switch_frame_old                        // $38f5
+    sta gate_gfx_offset                         // $38f2
+    sta gate_frame_old                          // $38f5
     beq L3910                                   // $38f8
 L38fa:
-    lda switch_frame                            // $38fa
-    cmp switch_frame_old                        // $38fd
-    sta switch_frame_old                        // $3900
+    lda gate_frame                              // $38fa
+    cmp gate_frame_old                          // $38fd
+    sta gate_frame_old                          // $3900
     beq L3938                                   // $3903
     asl                                         // $3905
     sta zp_fb                                   // $3906
@@ -4597,44 +4671,44 @@ L38fa:
     asl                                         // $3909
     clc                                         // $390a
     adc zp_fb                                   // $390b
-    sta switch_gfx_offset                       // $390d
+    sta gate_gfx_offset                         // $390d
 L3910:
     lda #$08                                    // $3910
-    sta switch_count                            // $3912
+    sta gate_count                              // $3912
     ldx maze                                    // $3915
-    lda maze_switch_index,x                     // $3918
-    sta switch_index                            // $391b
-    lda switch_mask                             // $391e
+    lda maze_gate_index,x                       // $3918
+    sta gate_index                              // $391b
+    lda gate_mask                               // $391e
     sta zp_fa                                   // $3921
 L3923:
     ror zp_fa                                   // $3923
     bcc L392a                                   // $3925
-    jsr draw_switch                             // $3927
+    jsr draw_gate                               // $3927
 L392a:
-    lda switch_index                            // $392a
+    lda gate_index                              // $392a
     clc                                         // $392d
     adc #$03                                    // $392e
-    sta switch_index                            // $3930
-    dec switch_count                            // $3933
+    sta gate_index                              // $3930
+    dec gate_count                              // $3933
     bne L3923                                   // $3936
 L3938:
     rts                                         // $3938
 
 // ----------------------------------------------------------------------------
-// Draw one switch block: switch_index = entry in switch_table
+// Draw one gate: gate_index = entry in gate_table
 // (3 bytes: screen offset low, high, orientation)
 // ----------------------------------------------------------------------------
-draw_switch:
-    ldx switch_index                            // $3939
-    lda switch_table,x                          // $393c
+draw_gate:
+    ldx gate_index                              // $3939
+    lda gate_table,x                            // $393c
     sta zp_fd                                   // $393f
     inx                                         // $3941
-    lda switch_table,x                          // $3942
+    lda gate_table,x                            // $3942
     clc                                         // $3945
-    adc switch_page_add                         // $3946
+    adc gate_page_add                           // $3946
     sta zp_fe                                   // $3949
     inx                                         // $394b
-    lda switch_table,x                          // $394c
+    lda gate_table,x                            // $394c
     ldy #$08                                    // $394f
     cmp #$02                                    // $3951
     bcc L3957                                   // $3953
@@ -4649,13 +4723,13 @@ L3957:
     asl                                         // $395f
     asl                                         // $3960
     clc                                         // $3961
-    adc switch_gfx_offset                       // $3962
+    adc gate_gfx_offset                         // $3962
     tax                                         // $3965
 L3966:
     ldy zp_fb                                   // $3966
-    lda switch_cell_offsets,y                   // $3968
+    lda gate_cell_offsets,y                     // $3968
     tay                                         // $396b
-    lda switch_chars,x                          // $396c
+    lda gate_chars,x                            // $396c
     sta (zp_fd),y                               // $396f
     inx                                         // $3971
     inc zp_fb                                   // $3972
@@ -4664,24 +4738,24 @@ L3966:
     rts                                         // $3978
 
 // ----------------------------------------------------------------------------
-// Switch masks: 4 masks per level (one per maze), levels 1-5
+// Gate masks: 4 masks per level (one per maze), levels 1-5
 // (level 5 and up use the last row)
 // ----------------------------------------------------------------------------
-switch_masks_by_level:
+gate_masks_by_level:
     .byte $ff,$ff,$ff,$ff,$fe,$fe,$ef,$fb,$de,$de,$ed,$bb,$d6,$dc,$cd,$3b  // $3979
     .byte $56,$9c,$cc,$39                       // $3989
 
 // ----------------------------------------------------------------------------
-// Index of each maze's first entry in switch_table (8 entries of 3 bytes per maze)
+// Index of each maze's first entry in gate_table (8 entries of 3 bytes per maze)
 // ----------------------------------------------------------------------------
-maze_switch_index:
+maze_gate_index:
     .byte $00,$18,$30,$48                       // $398d
 
 // ----------------------------------------------------------------------------
-// Switches: 8 per maze. Screen offset (low, high) of the switch block
+// Gates: 8 per maze. Screen offset (low, high) of the gate
 // and its orientation (0-3)
 // ----------------------------------------------------------------------------
-switch_table:
+gate_table:
     .byte $02,$07,$00                           // $3991
     .byte $0a,$07,$00                           // $3994
     .byte $fd,$05,$00                           // $3997
@@ -4714,12 +4788,12 @@ switch_table:
     .byte $9d,$06,$03                           // $39e8
     .byte $0d,$07,$00                           // $39eb
     .byte $f6,$05,$00                           // $39ee
-switch_cell_offsets:
+gate_cell_offsets:
     .byte $00,$01,$02,$28,$29,$2a,$50,$51,$52,$00,$00,$00,$00,$00,$00,$00  // $39f1
     .byte $00,$01,$02,$28,$29,$2a,$50,$51,$52,$00,$00,$00,$00,$00,$00,$00  // $3a01
     .byte $02,$29,$2a,$2b,$50,$51,$52,$53,$79,$7a,$00,$00,$00,$00,$00,$00  // $3a11
     .byte $01,$28,$29,$2a,$50,$51,$52,$53,$79,$7a,$00,$00,$00,$00,$00,$00  // $3a21
-switch_chars:
+gate_chars:
     .byte $12,$00,$11,$0e,$00,$06,$13,$7c,$14,$ff,$12,$00,$11,$0d,$7c,$07  // $3a31
     .byte $02,$02,$02,$ff,$12,$00,$11,$0d,$7c,$07,$02,$02,$02,$ff,$12,$7c  // $3a41
     .byte $11,$0c,$17,$08,$02,$02,$02,$ff,$12,$7c,$11,$0c,$17,$08,$02,$02  // $3a51
@@ -4738,77 +4812,78 @@ switch_chars:
     .byte $28,$27,$29,$29,$2a,$20,$2a,$20,$28,$27,$28,$27  // $3b21
 
 // ----------------------------------------------------------------------------
-// Fire button: start the switch animation (once per press). The
-// switches flip over in steps (switch_frame); the sound plays on the way.
+// Fire button: open the gates. Once per press: the gates flip open over
+// 5 steps (gate_frame 0-5), stay open for a while (shorter on higher
+// levels: gate_anim_start), then close again by themselves.
 // ----------------------------------------------------------------------------
-fire_switches:
-    lda controls                                // $3b2d
+fire_gates:
+    lda controls                                // $3b2d  fire released: allow the next press
     and #$10                                    // $3b30
     beq L3b39                                   // $3b32
     lda #$00                                    // $3b34
     sta fire_latch                              // $3b36
 L3b39:
-    lda switch_anim                             // $3b39
+    lda gate_anim                               // $3b39
     bne L3b52                                   // $3b3c
     lda controls                                // $3b3e
     and #$10                                    // $3b41
     bne L3b9a                                   // $3b43
     lda fire_latch                              // $3b45
     bne L3b9a                                   // $3b48
-    lda #$01                                    // $3b4a
+    lda #$01                                    // $3b4a  new press: start the gate animation
     sta fire_latch                              // $3b4c
-    sta switch_anim                             // $3b4f
+    sta gate_anim                               // $3b4f
 L3b52:
-    inc switch_anim                             // $3b52
-    cmp #$0b                                    // $3b55
+    inc gate_anim                               // $3b52
+    cmp #$0b                                    // $3b55  steps 1-10: opening (gate_frame 0-5)
     bcs L3b5e                                   // $3b57
     lsr                                         // $3b59
-    sta switch_frame                            // $3b5a
+    sta gate_frame                              // $3b5a
     rts                                         // $3b5d
 L3b5e:
-    cmp #$0b                                    // $3b5e
+    cmp #$0b                                    // $3b5e  step 11: open, gate sound
     bne L3b6c                                   // $3b60
-    ldx switch_mask                             // $3b62
+    ldx gate_mask                               // $3b62
     beq L3b6b                                   // $3b65
     sec                                         // $3b67
-    jsr switch_sound                            // $3b68
+    jsr gate_sound                              // $3b68
 L3b6b:
     rts                                         // $3b6b
 L3b6c:
-    ldx speed_class                             // $3b6c
-    cmp switch_anim_start,x                     // $3b6f
+    ldx speed_class                             // $3b6c  hold open until step gate_anim_start
+    cmp gate_anim_start,x                       // $3b6f
     bcs L3b75                                   // $3b72
     rts                                         // $3b74
 L3b75:
-    sta zp_fb                                   // $3b75
+    sta zp_fb                                   // $3b75  then close: gate_frame back to 0
     ldx speed_class                             // $3b77
-    lda switch_anim_end,x                       // $3b7a
+    lda gate_anim_end,x                         // $3b7a
     sec                                         // $3b7d
     sbc zp_fb                                   // $3b7e
     beq L3b89                                   // $3b80
     lsr                                         // $3b82
-    sta switch_frame                            // $3b83
+    sta gate_frame                              // $3b83
     jmp L3b9a                                   // $3b86
 L3b89:
-    ldx switch_mask                             // $3b89
+    ldx gate_mask                               // $3b89  closed again: gate sound, done
     beq L3b92                                   // $3b8c
     clc                                         // $3b8e
-    jsr switch_sound                            // $3b8f
+    jsr gate_sound                              // $3b8f
 L3b92:
     lda #$00                                    // $3b92
-    sta switch_frame                            // $3b94
-    sta switch_anim                             // $3b97
+    sta gate_frame                              // $3b94
+    sta gate_anim                               // $3b97
 L3b9a:
     rts                                         // $3b9a
-switch_anim_start:
+gate_anim_start:
     .byte $1a,$19,$18,$17,$16                   // $3b9b
-switch_anim_end:
+gate_anim_end:
     .byte $24,$23,$22,$21,$20                   // $3ba0
 
 // ----------------------------------------------------------------------------
-// Switch sound (voice 3 noise): C = 1 high, C = 0 low
+// Gate sound (voice 3 noise): C = 1 high, C = 0 low
 // ----------------------------------------------------------------------------
-switch_sound:
+gate_sound:
     lda #$0f                                    // $3ba5
     bcc L3bab                                   // $3ba7
     lda #$ff                                    // $3ba9
@@ -4914,7 +4989,7 @@ L3c23:
     adc tilt_dx                                 // $3c48
     tax                                         // $3c4b
     lda mark_cell_counts,x                      // $3c4c
-    sta cf39                                    // $3c4f
+    sta mark_cell_count                         // $3c4f
     txa                                         // $3c52
     asl                                         // $3c53
     sta zp_fd                                   // $3c54
@@ -4940,12 +5015,12 @@ L3c74:
     jsr mark_cell                               // $3c74
 L3c77:
     inx                                         // $3c77
-    dec cf39                                    // $3c78
+    dec mark_cell_count                         // $3c78
     bne L3c66                                   // $3c7b
     rts                                         // $3c7d
 mark_cell:
     stx zp_fa                                   // $3c7e
-    ldx cf55                                    // $3c80
+    ldx mark_count                              // $3c80
     tya                                         // $3c83
     clc                                         // $3c84
     adc zp_fb                                   // $3c85
@@ -4971,7 +5046,7 @@ mark_cell:
     lda #$63                                    // $3cae
     sta (zp_f8),y                               // $3cb0
 L3cb2:
-    inc cf55                                    // $3cb2
+    inc mark_count                              // $3cb2
     ldx zp_fa                                   // $3cb5
     rts                                         // $3cb7
 mark_cell_counts:
@@ -5102,7 +5177,7 @@ set_ball_frame:
     cmp sprite_ptrs+3                           // $3dad
     beq L3db7                                   // $3db0
     ldx #$01                                    // $3db2
-    stx $cfa7                                   // $3db4
+    stx ball_frame_changed                      // $3db4
 L3db7:
     sta sprite_ptrs+3                           // $3db7
     sta sprite_ptrs+4                           // $3dba
@@ -5162,10 +5237,10 @@ L3e0b:
     lda #$ff                                    // $3e17
     bne L3e25                                   // $3e19
 L3e1b:
-    ldy $cf93                                   // $3e1b
+    ldy shine_state                             // $3e1b
     cpy #$01                                    // $3e1e
     bne L3e25                                   // $3e20
-    inc $cf93                                   // $3e22
+    inc shine_state                             // $3e22
 L3e25:
     sta shine_x                                 // $3e25
     lda ball_vy                                 // $3e28
@@ -5204,10 +5279,10 @@ L3e57:
     lda #$ff                                    // $3e63
     bne L3e71                                   // $3e65
 L3e67:
-    ldy $cf93                                   // $3e67
+    ldy shine_state                             // $3e67
     cpy #$01                                    // $3e6a
     bne L3e71                                   // $3e6c
-    inc $cf93                                   // $3e6e
+    inc shine_state                             // $3e6e
 L3e71:
     sta shine_y                                 // $3e71
     lda tilt_dy                                 // $3e74
@@ -5312,19 +5387,19 @@ L3f3d:
     sta VIC_SPR_ENABLE                          // $3f3d
     and #$02                                    // $3f40
     bne L3f51                                   // $3f42
-    ldy $cf93                                   // $3f44
+    ldy shine_state                             // $3f44
     cpy #$02                                    // $3f47
     bne L3f56                                   // $3f49
     jsr shine_off_sound                         // $3f4b
     jmp L3f56                                   // $3f4e
 L3f51:
     ldy #$01                                    // $3f51
-    sty $cf93                                   // $3f53
+    sty shine_state                             // $3f53
 L3f56:
     ldx shine_x                                 // $3f56
     lda shine_offset_table,x                    // $3f59
     tay                                         // $3f5c
-    lda $cf74                                   // $3f5d
+    lda glint_on                                // $3f5d
     beq L3f6a                                   // $3f60
     lda tilt_dx                                 // $3f62
     and tilt_dy                                 // $3f65
@@ -5392,7 +5467,7 @@ L3fd8:
     adc zp_fb                                   // $3fdc
     sta VIC_SPR1_Y                              // $3fde
     jsr shine_diagonal                          // $3fe1
-    lda $cf74                                   // $3fe4
+    lda glint_on                                // $3fe4
     beq L3fec                                   // $3fe7
     jsr draw_ball_glint                         // $3fe9
 L3fec:
@@ -5657,27 +5732,27 @@ maze_frame_colours:
     .byte $0e,$0a,$0c,$0d                       // $4199
 
 // ----------------------------------------------------------------------------
-// Colour the switch blocks (colour 15) in the colour buffer
+// Colour the gate (colour 15) in the colour buffer
 // ----------------------------------------------------------------------------
-colour_switches:
+colour_gates:
     lda #$08                                    // $419d
-    sta switch_count                            // $419f
+    sta gate_count                              // $419f
     ldx maze                                    // $41a2
-    lda maze_switch_index,x                     // $41a5
-    sta switch_index                            // $41a8
+    lda maze_gate_index,x                       // $41a5
+    sta gate_index                              // $41a8
     lda #$00                                    // $41ab
-    sta switch_gfx_offset                       // $41ad
+    sta gate_gfx_offset                         // $41ad
 L41b0:
-    ldx switch_index                            // $41b0
-    lda switch_table,x                          // $41b3
+    ldx gate_index                              // $41b0
+    lda gate_table,x                            // $41b3
     sta zp_fd                                   // $41b6
     inx                                         // $41b8
-    lda switch_table,x                          // $41b9
+    lda gate_table,x                            // $41b9
     clc                                         // $41bc
     adc #$74                                    // $41bd
     sta zp_fe                                   // $41bf
     inx                                         // $41c1
-    lda switch_table,x                          // $41c2
+    lda gate_table,x                            // $41c2
     sta zp_fb                                   // $41c5
     asl                                         // $41c7
     clc                                         // $41c8
@@ -5687,21 +5762,21 @@ L41b0:
     sta zp_fc                                   // $41cf
 L41d1:
     ldy zp_fb                                   // $41d1
-    lda switch_cell_layout,y                    // $41d3
+    lda gate_cell_layout,y                      // $41d3
     tay                                         // $41d6
     lda #$0f                                    // $41d7
     sta (zp_fd),y                               // $41d9
     inc zp_fb                                   // $41db
     dec zp_fc                                   // $41dd
     bpl L41d1                                   // $41df
-    lda switch_index                            // $41e1
+    lda gate_index                              // $41e1
     clc                                         // $41e4
     adc #$03                                    // $41e5
-    sta switch_index                            // $41e7
-    dec switch_count                            // $41ea
+    sta gate_index                              // $41e7
+    dec gate_count                              // $41ea
     bne L41b0                                   // $41ed
     rts                                         // $41ef
-switch_cell_layout:
+gate_cell_layout:
     .byte $01,$29,$51,$28,$29,$2a,$2a,$51,$52,$29,$51,$52  // $41f0
 
 // ----------------------------------------------------------------------------
@@ -5710,12 +5785,12 @@ switch_cell_layout:
 next_maze_slide:
     jsr draw_maze_screen                        // $41fc
     sec                                         // $41ff
-    jsr draw_switches                           // $4200
-    jsr draw_switch_colours                     // $4203
+    jsr draw_gates                              // $4200
+    jsr draw_gate_colours                       // $4203
     jsr fill_colour_buffer                      // $4206
-    jsr colour_switches                         // $4209
+    jsr colour_gates                            // $4209
     lda #$00                                    // $420c
-    sta cf53                                    // $420e
+    sta tilt_enabled                            // $420e
     lda #$01                                    // $4211
     sta slide_out_flag                          // $4213
     ldx maze                                    // $4216
@@ -5725,7 +5800,7 @@ next_maze_slide:
     dex                                         // $421f
     sec                                         // $4220
     sbc hole_x_by_maze,x                        // $4221
-    sta $cf95                                   // $4224
+    sta hole_wrap                               // $4224
     lda #$00                                    // $4227
     sta slide_speed                             // $4229
     lda #$01                                    // $422c
@@ -5736,7 +5811,7 @@ next_maze_slide:
     sta slide_dir                               // $4238
     lda #$60                                    // $423b
     sta slide_speed_max                         // $423d
-    lda cf0e                                    // $4240
+    lda fine_scroll_x                           // $4240
     sta slide_fine                              // $4243
     lda #$00                                    // $4246
     sta slide_fine_frac                         // $4248
@@ -5757,7 +5832,7 @@ slide_wait:
 // ----------------------------------------------------------------------------
 slide_in:
     lda #$00                                    // $4263
-    sta $cf85                                   // $4265
+    sta sign_sound_on                           // $4265
     sta slide_bounce                            // $4268
     lda #$08                                    // $426b
     sta SID_V1_CTRL                             // $426d
@@ -5893,7 +5968,7 @@ slide_scroll:
 L4373:
     jsr slide_noise                             // $4373
     lda slide_fine                              // $4376
-    sta cf0e                                    // $4379
+    sta fine_scroll_x                           // $4379
     jsr slide_accelerate                        // $437c
     lda #$00                                    // $437f
     sta zp_fb                                   // $4381
@@ -6072,15 +6147,15 @@ L44b1:
 // ----------------------------------------------------------------------------
 check_hiscore:
     lda #$01                                    // $44b5
-    sta cfb8                                    // $44b7
+    sta no_restart                              // $44b7
     sed                                         // $44ba
     lda hiscore                                 // $44bb
     sec                                         // $44be
     sbc score                                   // $44bf
-    lda $cefc                                   // $44c2
-    sbc $cf48                                   // $44c5
-    lda $cefd                                   // $44c8
-    sbc $cf49                                   // $44cb
+    lda hiscore+1                               // $44c2
+    sbc score+1                                 // $44c5
+    lda hiscore+2                               // $44c8
+    sbc score+2                                 // $44cb
     cld                                         // $44ce
     bcc L44de                                   // $44cf
     lda game_over                               // $44d1
@@ -6092,10 +6167,10 @@ L44db:
 L44de:
     lda score                                   // $44de
     sta hiscore                                 // $44e1
-    lda $cf48                                   // $44e4
-    sta $cefc                                   // $44e7
-    lda $cf49                                   // $44ea
-    sta $cefd                                   // $44ed
+    lda score+1                                 // $44e4
+    sta hiscore+1                               // $44e7
+    lda score+2                                 // $44ea
+    sta hiscore+2                               // $44ed
     jsr sid_off                                 // $44f0
     lda #$f0                                    // $44f3
     sta SID_V2_SR                               // $44f5
@@ -6103,21 +6178,21 @@ L44de:
     sta SID_V2_CTRL                             // $44fa
     lda #$01                                    // $44fd
     sta scroll_hiscore_step                     // $44ff
-    sta $cf75                                   // $4502
+    sta blip_sound                              // $4502
 hiscore_scroll_wait:
     lda scroll_hiscore_step                     // $4505
     bne hiscore_scroll_wait                     // $4508
     lda #$00                                    // $450a
-    sta $cf75                                   // $450c
-    sta $cf7a                                   // $450f
+    sta blip_sound                              // $450c
+    sta roll_sound_off                          // $450f
     sta SID_V2_CTRL                             // $4512
     clc                                         // $4515
-    jsr switch_sound                            // $4516
+    jsr gate_sound                              // $4516
     lda #$1e                                    // $4519
     jsr wait_frames                             // $451b
 check_hiscore_done:
     lda #$00                                    // $451e
-    lda cfb8                                    // $4520
+    lda no_restart                              // $4520
     rts                                         // $4523
 
 // ----------------------------------------------------------------------------
@@ -6127,17 +6202,17 @@ init_game:
     ldx #$00                                    // $4524
     ldy #$00                                    // $4526
     lda demo_mode                               // $4528  demo or (unused) $CF89: start at level 8, maze 2
-    ora $cf89                                   // $452b
+    ora cf89_unused                             // $452b
     beq L4534                                   // $452e
     ldx #$07                                    // $4530
     ldy #$02                                    // $4532
 L4534:
-    stx level                                   // $4534
-    sty maze                                    // $4537
+    stx level                                   // $4534  level
+    sty maze                                    // $4537  maze
     lda #$00                                    // $453a
     sta score                                   // $453c
-    sta $cf48                                   // $453f
-    sta $cf49                                   // $4542
+    sta score+1                                 // $453f
+    sta score+2                                 // $4542
     ldx level                                   // $4545
     cpx #$04                                    // $4548
     bcc L454e                                   // $454a
@@ -6146,8 +6221,8 @@ L454e:
     stx speed_class                             // $454e
     lda tilt_rates,x                            // $4551
     sta tilt_rate                               // $4554
-    jsr init_hole                               // $4557
-    lda #$b8                                    // $455a
+    jsr init_hole                               // $4557  exit hole of the first maze
+    lda #$b8                                    // $455a  exit hole sprite frame
     sta hole_sprite                             // $455c
     rts                                         // $455f
 tilt_rates:
@@ -6181,17 +6256,18 @@ ball_start_positions:
     .byte $34,$00,$62                           // $4594
 
 // ----------------------------------------------------------------------------
-// Play one level (one ball): set up the sprites, let the ball appear,
-// then run until the ball drops into the exit hole or is lost
+// Play one maze (one ball): set up, let the ball appear and wait for
+// fire, then run until the ball drops into the exit hole or rolls off the
+// touches a wall. Speed, tilt rate and ball size grow with the level.
 // ----------------------------------------------------------------------------
 play_level:
-    lda #$01                                    // $4597
+    lda #$01                                    // $4597  power drains with each clunk, BACKUP allowed
     sta power_drain_on                          // $4599
-    sta $cfbf                                   // $459c
-    lda VIC_SPR_ENABLE                          // $459f
+    sta backup_allowed                          // $459c
+    lda VIC_SPR_ENABLE                          // $459f  sprites 1-4 off
     and #$e1                                    // $45a2
     sta VIC_SPR_ENABLE                          // $45a4
-    ldx level                                   // $45a7
+    ldx level                                   // $45a7  speed class and tilt rate from the level (max 4)
     cpx #$04                                    // $45aa
     bcc L45b0                                   // $45ac
     ldx #$04                                    // $45ae
@@ -6199,7 +6275,7 @@ L45b0:
     stx speed_class                             // $45b0
     lda tilt_rates,x                            // $45b3
     sta tilt_rate                               // $45b6
-    lda level                                   // $45b9
+    lda level                                   // $45b9  ball size = level - 3, limited to 1-6: the ball grows from level 5 on
     sec                                         // $45bc
     sbc #$03                                    // $45bd
     bcc L45c5                                   // $45bf
@@ -6214,14 +6290,14 @@ L45ca:
     lda #$06                                    // $45ce
 L45d0:
     sta ball_size                               // $45d0
-    jsr draw_maze_screen                        // $45d3
+    jsr draw_maze_screen                        // $45d3  maze to the buffers, ball to its start
     jsr place_ball_start                        // $45d6
     jsr clear_char_2318                         // $45d9
     jsr init_ball_sprites                       // $45dc
-    lda $cf79                                   // $45df
+    lda new_ball_size                           // $45df  new level and a bigger ball: dissolve the old one first
     beq L45fa                                   // $45e2
     lda #$00                                    // $45e4
-    sta $cf79                                   // $45e6
+    sta new_ball_size                           // $45e6
     lda ball_size                               // $45e9
     cmp #$01                                    // $45ec
     beq L45fa                                   // $45ee
@@ -6231,46 +6307,46 @@ L45d0:
     jsr ball_dissolve                           // $45f7
 L45fa:
     jsr ball_appear                             // $45fa  ball appears, wait for fire
-    lda VIC_SPR_ENABLE                          // $45fd
+    lda VIC_SPR_ENABLE                          // $45fd  shadow sprite off
     and #$fe                                    // $4600
     sta VIC_SPR_ENABLE                          // $4602
-    lda VIC_SPR_BG_COLL                         // $4605
+    lda VIC_SPR_BG_COLL                         // $4605  clear the sprite-background collision latch
     lda #$00                                    // $4608
-    sta $cf73                                   // $460a
-    sta cf55                                    // $460d
-    sta $cf93                                   // $4610
+    sta ball_waiting                            // $460a
+    sta mark_count                              // $460d
+    sta shine_state                             // $4610
     jsr draw_ball_glint                         // $4613
-    lda #$dd                                    // $4616
+    lda #$dd                                    // $4616  shine sprite frame
     sta sprite_ptrs+1                           // $4618
     lda #$03                                    // $461b
-    sta $cf9a                                   // $461d
-    lda #$01                                    // $4620
-    sta $cf74                                   // $4622
+    sta count_marks_delay                       // $461d
+    lda #$01                                    // $4620  all game updates on
+    sta glint_on                                // $4622
     sta marking_on                              // $4625
-    sta cf53                                    // $4628
-    sta cf52                                    // $462b
+    sta tilt_enabled                            // $4628
+    sta controls_enabled                        // $462b
     sta steering_on                             // $462e
-    sta cf51                                    // $4631
+    sta fire_enabled                            // $4631
     lda #$00                                    // $4634
     sta ball_in_hole                            // $4636
     sta ball_lost                               // $4639
     lda #$01                                    // $463c
-    sta $cf8d                                   // $463e
+    sta demo_stops_at_end                       // $463e
 play_level_loop:
     lda #$01                                    // $4641
     jsr wait_frames                             // $4643
-    jsr update_tilt_graphics                    // $4646
+    jsr update_tilt_graphics                    // $4646  the frame work runs in the IRQ; here only the tilt graphics
     clc                                         // $4649
-    jsr draw_switches                           // $464a
+    jsr draw_gates                              // $464a
     lda ball_in_hole                            // $464d  until in the hole or lost
     ora ball_lost                               // $4650
     beq play_level_loop                         // $4653
-    lda ball_in_hole                            // $4655
+    lda ball_in_hole                            // $4655  in the hole: next maze
     beq L4660                                   // $4658
     jsr level_done                              // $465a
     jmp L4663                                   // $465d
 L4660:
-    jsr ball_lost_sequence                      // $4660
+    jsr ball_lost_sequence                      // $4660  touched a wall
 L4663:
     rts                                         // $4663
 
@@ -6332,21 +6408,21 @@ L46a5:
 L46bb:
     jsr next_level_slide                        // $46bb
     lda #$00                                    // $46be
-    sta $cf82                                   // $46c0
-    sta $cf7a                                   // $46c3
+    sta sign_spin_speed                         // $46c0
+    sta roll_sound_off                          // $46c3
     lda #$14                                    // $46c6
     jsr wait_frames                             // $46c8
     lda #$00                                    // $46cb
     sta maze                                    // $46cd
     lda #$00                                    // $46d0
-    sta $cfa9                                   // $46d2
+    sta two_tone_step                           // $46d2
     lda #$01                                    // $46d5
     sta power_refill                            // $46d7
-    sta $cfa8                                   // $46da
+    sta two_tone_timer                          // $46da
     sta scroll_level_step                       // $46dd
-    sta $cf79                                   // $46e0
+    sta new_ball_size                           // $46e0
 L46e3:
-    lda $cfa8                                   // $46e3
+    lda two_tone_timer                          // $46e3
     bne L46e3                                   // $46e6
 L46e8:
     jsr level_sign_slide_out                    // $46e8
@@ -6354,8 +6430,8 @@ L46eb:
     rts                                         // $46eb
 
 // ----------------------------------------------------------------------------
-// The ball fell into a hole: sound, flash, then level the board and
-// count the bonus; if that was the last of the power: game over
+// The ball touched a wall: sound, flash, then level the board and count
+// the bonus; if that was the BACKUP power: game over
 // ----------------------------------------------------------------------------
 ball_lost_sequence:
     jsr mask_ball_sprite                        // $46ec
@@ -6365,11 +6441,11 @@ ball_lost_sequence:
     lda #$15                                    // $46f7
     sta SID_V2_CTRL                             // $46f9
     lda #$00                                    // $46fc
-    sta cf17                                    // $46fe
+    sta flash_phase                             // $46fe
     lda #$01                                    // $4701
-    sta cf18                                    // $4703
+    sta flash_step                              // $4703
 L4706:
-    lda cf18                                    // $4706
+    lda flash_step                              // $4706
     bne L4706                                   // $4709
     jsr sid_off                                 // $470b
     lda #$e0                                    // $470e
@@ -6386,8 +6462,8 @@ L4706:
     lda game_over                               // $472a
     bne L4766                                   // $472d
     lda #$01                                    // $472f
-    sta cf53                                    // $4731
-    sta cf51                                    // $4734
+    sta tilt_enabled                            // $4731
+    sta fire_enabled                            // $4734
     lda #$1e                                    // $4737
     sta controls                                // $4739
 L473c:
@@ -6395,14 +6471,14 @@ L473c:
     jsr wait_frames                             // $473e
     jsr update_tilt_graphics                    // $4741
     clc                                         // $4744
-    jsr draw_switches                           // $4745
+    jsr draw_gates                              // $4745
     lda tilt_shift_x                            // $4748
     cmp #$04                                    // $474b
     bne L473c                                   // $474d
     lda tilt_shift_y                            // $474f
     cmp #$08                                    // $4752
     bne L473c                                   // $4754
-    lda switch_anim                             // $4756
+    lda gate_anim                               // $4756
     bne L473c                                   // $4759
     sec                                         // $475b
     jsr edge_highlight_v                        // $475c
@@ -6411,16 +6487,16 @@ L473c:
     jmp L477d                                   // $4763
 L4766:
     lda #$01                                    // $4766
-    sta cf51                                    // $4768
+    sta fire_enabled                            // $4768
 L476b:
     clc                                         // $476b
-    jsr draw_switches                           // $476c
+    jsr draw_gates                              // $476c
     lda #$01                                    // $476f
     jsr wait_frames                             // $4771
-    lda switch_anim                             // $4774
+    lda gate_anim                               // $4774
     bne L476b                                   // $4777
     clc                                         // $4779
-    jsr draw_switches                           // $477a
+    jsr draw_gates                              // $477a
 L477d:
     lda demo_mode                               // $477d
     bne L47a4                                   // $4780
@@ -6449,8 +6525,8 @@ level_bonus:
     jsr set_bonus_glyph                         // $47a5
     jsr freeze_edge_highlight                   // $47a8
     lda #$01                                    // $47ab
-    sta $cf7a                                   // $47ad
-    sta $cfa5                                   // $47b0
+    sta roll_sound_off                          // $47ad
+    sta bonus_sound_on                          // $47b0
     sta count_marks_on                          // $47b3
     jsr sid_off                                 // $47b6
     lda #$00                                    // $47b9
@@ -6462,13 +6538,13 @@ level_bonus:
 L47c8:
     lda count_marks_on                          // $47c8
     ora bonus_left                              // $47cb
-    ora $cfa8                                   // $47ce
+    ora two_tone_timer                          // $47ce
     bne L47c8                                   // $47d1
     lda #$19                                    // $47d3
     jsr wait_frames                             // $47d5
     lda #$00                                    // $47d8
-    sta $cfa5                                   // $47da
-    sta $cf7a                                   // $47dd
+    sta bonus_sound_on                          // $47da
+    sta roll_sound_off                          // $47dd
     jsr show_music_glyph                        // $47e0
     lda #$00                                    // $47e3
     jsr colour_status_marks                     // $47e5
@@ -6513,16 +6589,16 @@ level_settle:
     lda #$1e                                    // $4817
     sta controls                                // $4819
     lda #$01                                    // $481c
-    sta cf51                                    // $481e
-    sta cf53                                    // $4821
+    sta fire_enabled                            // $481e
+    sta tilt_enabled                            // $4821
     sta clunk_state                             // $4824
 L4827:
     jsr update_tilt_graphics                    // $4827
     clc                                         // $482a
-    jsr draw_switches                           // $482b
+    jsr draw_gates                              // $482b
     lda #$01                                    // $482e
     jsr wait_frames                             // $4830
-    lda switch_anim                             // $4833
+    lda gate_anim                               // $4833
     ora clunk_state                             // $4836
     bne L4827                                   // $4839
     rts                                         // $483b
@@ -6533,7 +6609,7 @@ L4827:
 // ----------------------------------------------------------------------------
 next_level_slide:
     lda #$00                                    // $483c
-    sta cf53                                    // $483e
+    sta tilt_enabled                            // $483e
     lda #$00                                    // $4841
     sta slide_out_flag                          // $4843
     lda #$02                                    // $4846
@@ -6545,10 +6621,10 @@ L484b:
 L4853:
     jsr draw_maze_screen                        // $4853
     sec                                         // $4856
-    jsr draw_switches                           // $4857
-    jsr draw_switch_colours                     // $485a
+    jsr draw_gates                              // $4857
+    jsr draw_gate_colours                       // $485a
     jsr fill_colour_buffer                      // $485d
-    jsr colour_switches                         // $4860
+    jsr colour_gates                            // $4860
     ldx maze                                    // $4863
     lda #$40                                    // $4866
     sec                                         // $4868
@@ -6556,7 +6632,7 @@ L4853:
     inx                                         // $486c
     clc                                         // $486d
     adc hole_x_by_maze,x                        // $486e
-    sta $cf95                                   // $4871
+    sta hole_wrap                               // $4871
     lda #$00                                    // $4874
     sta slide_speed                             // $4876
     lda #$00                                    // $4879
@@ -6567,7 +6643,7 @@ L4853:
     sta slide_dir                               // $4885
     lda #$80                                    // $4888
     sta slide_speed_max                         // $488a
-    lda cf0e                                    // $488d
+    lda fine_scroll_x                           // $488d
     sta slide_fine                              // $4890
     lda #$00                                    // $4893
     sta slide_fine_frac                         // $4895
@@ -6661,10 +6737,10 @@ L492d:
 start_first_maze:
     jsr draw_maze_screen                        // $493b
     sec                                         // $493e
-    jsr draw_switches                           // $493f
-    jsr draw_switch_colours                     // $4942
+    jsr draw_gates                              // $493f
+    jsr draw_gate_colours                       // $4942
     jsr fill_colour_buffer                      // $4945
-    jsr colour_switches                         // $4948
+    jsr colour_gates                            // $4948
     lda #$08                                    // $494b
     sta screen_on                               // $494d
     lda #$01                                    // $4950
@@ -6691,7 +6767,7 @@ L496b:
     lda #$00                                    // $4984
     sta title_mode                              // $4986
     lda #<chars_1d00                            // $4989
-    sta cf53                                    // $498b
+    sta tilt_enabled                            // $498b
     lda #>chars_1d00                            // $498e
     sta controls                                // $4990
     lda #$80                                    // $4993
@@ -6705,10 +6781,10 @@ L496b:
     sta tilt_dy                                 // $49a8
     sta sound_tilt_dx                           // $49ab
     sta sound_tilt_dy                           // $49ae
-    sta cf0b                                    // $49b1
-    sta cf0c                                    // $49b4
+    sta tilt_shift_x_old                        // $49b1
+    sta tilt_shift_y_old                        // $49b4
     lda #$01                                    // $49b7
-    sta cf53                                    // $49b9
+    sta tilt_enabled                            // $49b9
     lda #$01                                    // $49bc
     jsr wait_frames                             // $49be
     lda #$00                                    // $49c1
@@ -6740,7 +6816,7 @@ L49d2:
     sta scroll_score_step                       // $4a03
     sta scroll_level_step                       // $4a06
     lda #$07                                    // $4a09
-    sta $cfbc                                   // $4a0b
+    sta bg2_restore_timer                       // $4a0b
     jsr level_settle                            // $4a0e
     rts                                         // $4a11
 
@@ -6749,13 +6825,13 @@ L49d2:
 // ----------------------------------------------------------------------------
 shake_board:
     lda #$01                                    // $4a12
-    sta $cfa1                                   // $4a14
+    sta shaking                                 // $4a14
     lda #$02                                    // $4a17
-    sta $cfa4                                   // $4a19
+    sta shake_count                             // $4a19
     lda #$00                                    // $4a1c
-    sta cf52                                    // $4a1e
+    sta controls_enabled                        // $4a1e
     lda #$01                                    // $4a21
-    sta cf53                                    // $4a23
+    sta tilt_enabled                            // $4a23
     lda #$0e                                    // $4a26
     sta tilt_rate                               // $4a28
     lda #$1d                                    // $4a2b
@@ -6782,7 +6858,7 @@ L4a3d:
     lda controls                                // $4a5d
     cmp #$1e                                    // $4a60
     bne L4a6d                                   // $4a62
-    dec $cfa4                                   // $4a64
+    dec shake_count                             // $4a64
     beq L4a75                                   // $4a67
     lda #$1d                                    // $4a69
     bne L4a6f                                   // $4a6b
@@ -6806,7 +6882,7 @@ L4a75:
     lda #$19                                    // $4a91
     jsr wait_frames                             // $4a93
     lda #$00                                    // $4a96
-    sta $cfa1                                   // $4a98
+    sta shaking                                 // $4a98
     rts                                         // $4a9b
 shake_shift_targets:
     .byte $08,$04,$00                           // $4a9c
@@ -6821,35 +6897,35 @@ add_score:
     clc                                         // $4aa2
     adc score                                   // $4aa3
     sta score                                   // $4aa6
-    lda $cf48                                   // $4aa9
+    lda score+1                                 // $4aa9
     adc zp_fb                                   // $4aac
-    sta $cf48                                   // $4aae
+    sta score+1                                 // $4aae
     bcc L4ab4                                   // $4ab1
     nop                                         // $4ab3
 L4ab4:
-    lda $cf49                                   // $4ab4
+    lda score+2                                 // $4ab4
     adc #$00                                    // $4ab7
-    sta $cf49                                   // $4ab9
+    sta score+2                                 // $4ab9
     cld                                         // $4abc
-    lda $cf49                                   // $4abd
+    lda score+2                                 // $4abd
     lsr                                         // $4ac0
     lsr                                         // $4ac1
     lsr                                         // $4ac2
     lsr                                         // $4ac3
     ldx #$00                                    // $4ac4
     jsr draw_score_digit                        // $4ac6
-    lda $cf49                                   // $4ac9
+    lda score+2                                 // $4ac9
     and #$0f                                    // $4acc
     ldx #$08                                    // $4ace
     jsr draw_score_digit                        // $4ad0
-    lda $cf48                                   // $4ad3
+    lda score+1                                 // $4ad3
     lsr                                         // $4ad6
     lsr                                         // $4ad7
     lsr                                         // $4ad8
     lsr                                         // $4ad9
     ldx #$10                                    // $4ada
     jsr draw_score_digit                        // $4adc
-    lda $cf48                                   // $4adf
+    lda score+1                                 // $4adf
     and #$0f                                    // $4ae2
     ldx #$18                                    // $4ae4
     jsr draw_score_digit                        // $4ae6
@@ -7171,7 +7247,7 @@ init_hole:
     lda #$00                                    // $4c9d
     sta hole_x_hi                               // $4c9f
     lda #$04                                    // $4ca2
-    sta cf0e                                    // $4ca4
+    sta fine_scroll_x                           // $4ca4
     rts                                         // $4ca7
 
 // ----------------------------------------------------------------------------
@@ -7213,7 +7289,7 @@ L4cda:
 hole_slide_right:
     lda slide_fine                              // $4ce9
     sec                                         // $4cec
-    sbc cf0e                                    // $4ced
+    sbc fine_scroll_x                           // $4ced
     bcs L4cf4                                   // $4cf0
     adc #$08                                    // $4cf2
 L4cf4:
@@ -7231,7 +7307,7 @@ L4d00:
     bcc L4d29                                   // $4d0c
     lda hole_x                                  // $4d0e
     sec                                         // $4d11
-    sbc $cf95                                   // $4d12
+    sbc hole_wrap                               // $4d12
     sta hole_x                                  // $4d15
     lda hole_x_hi                               // $4d18
     sbc #$01                                    // $4d1b
@@ -7246,7 +7322,7 @@ L4d29:
 // During the slide: move the hole with the maze (to the left)
 // ----------------------------------------------------------------------------
 hole_slide_left:
-    lda cf0e                                    // $4d2a
+    lda fine_scroll_x                           // $4d2a
     sec                                         // $4d2d
     sbc slide_fine                              // $4d2e
     bcs L4d35                                   // $4d31
@@ -7269,7 +7345,7 @@ L4d45:
 L4d53:
     lda hole_x                                  // $4d53
     clc                                         // $4d56
-    adc $cf95                                   // $4d57
+    adc hole_wrap                               // $4d57
     sta hole_x                                  // $4d5a
     lda hole_x_hi                               // $4d5d
     adc #$01                                    // $4d60
@@ -7353,7 +7429,7 @@ L4de1:
     lda #$01                                    // $4de1
     jsr wait_frames                             // $4de3
     clc                                         // $4de6
-    jsr draw_switches                           // $4de7
+    jsr draw_gates                              // $4de7
     jsr pull_ball_to_hole                       // $4dea
     lda fall_delay                              // $4ded
     bne L4df8                                   // $4df0
@@ -7385,7 +7461,7 @@ fall_sound_step:
     jsr multiply                                // $4e2a
     sty zp_ff                                   // $4e2d
     ldx #$fa                                    // $4e2f
-    ldy $cf72                                   // $4e31
+    ldy fall_freq_step_hi                       // $4e31
     jsr multiply                                // $4e34
     txa                                         // $4e37
     clc                                         // $4e38
@@ -7393,15 +7469,15 @@ fall_sound_step:
     sta fall_freq_step                          // $4e3b
     tya                                         // $4e3e
     adc #$00                                    // $4e3f
-    sta $cf72                                   // $4e41
+    sta fall_freq_step_hi                       // $4e41
     lda fall_freq                               // $4e44
     sec                                         // $4e47
     sbc fall_freq_step                          // $4e48
     sta fall_freq                               // $4e4b
     sta SID_V2_FREQ_LO                          // $4e4e
-    lda $cf70                                   // $4e51
-    sbc $cf72                                   // $4e54
-    sta $cf70                                   // $4e57
+    lda fall_freq_hi                            // $4e51
+    sbc fall_freq_step_hi                       // $4e54
+    sta fall_freq_hi                            // $4e57
     sta SID_V2_FREQ_HI                          // $4e5a
     rts                                         // $4e5d
 fall_sound_start:
@@ -7409,9 +7485,9 @@ fall_sound_start:
     sta fall_freq_step                          // $4e60
     sta fall_freq                               // $4e63
     lda #$e6                                    // $4e66
-    sta $cf70                                   // $4e68
+    sta fall_freq_hi                            // $4e68
     lda #$05                                    // $4e6b
-    sta $cf72                                   // $4e6d
+    sta fall_freq_step_hi                       // $4e6d
     lda ball_size                               // $4e70
     lsr                                         // $4e73
     lsr                                         // $4e74
@@ -7794,12 +7870,12 @@ init_ball_sprites:
     lda #$05                                    // $50d6
     sta VIC_SPR0_COL                            // $50d8
     lda #$00                                    // $50db
-    sta $cf73                                   // $50dd
-    sta $cf74                                   // $50e0
-    sta cf53                                    // $50e3
+    sta ball_waiting                            // $50dd
+    sta glint_on                                // $50e0
+    sta tilt_enabled                            // $50e3
     sta steering_on                             // $50e6
-    sta cf51                                    // $50e9
-    sta cf52                                    // $50ec
+    sta fire_enabled                            // $50e9
+    sta controls_enabled                        // $50ec
     jsr init_shine                              // $50ef
     jsr move_shine                              // $50f2
     lda VIC_SPR_ENABLE                          // $50f5
@@ -7829,7 +7905,7 @@ update_shadow:
 ball_appear:
     jsr appear_sound                            // $5124
     lda #$01                                    // $5127
-    sta $cf75                                   // $5129
+    sta blip_sound                              // $5129
     lda #$0f                                    // $512c
     jsr wait_frames                             // $512e
     lda #$00                                    // $5131
@@ -7844,14 +7920,14 @@ L5135:
     cmp #$09                                    // $5144
     bcc L5135                                   // $5146
     lda #$00                                    // $5148
-    sta $cf75                                   // $514a
+    sta blip_sound                              // $514a
     sta SID_V2_FREQ_HI                          // $514d
     sec                                         // $5150
-    jsr switch_sound                            // $5151
+    jsr gate_sound                              // $5151
     lda #$01                                    // $5154
-    sta cf53                                    // $5156
-    sta cf52                                    // $5159
-    sta $cf73                                   // $515c
+    sta tilt_enabled                            // $5156
+    sta controls_enabled                        // $5159
+    sta ball_waiting                            // $515c
 wait_fire_to_start:
     lda #$01                                    // $515f
     jsr wait_frames                             // $5161
@@ -7862,12 +7938,12 @@ wait_fire_to_start:
     and #$10                                    // $516f
     bne wait_fire_to_start                      // $5171
     lda #$00                                    // $5173
-    sta $cf73                                   // $5175
-    sta cf53                                    // $5178
-    sta cf52                                    // $517b
+    sta ball_waiting                            // $5175
+    sta tilt_enabled                            // $5178
+    sta controls_enabled                        // $517b
     jsr appear_sound                            // $517e
     lda #$01                                    // $5181
-    sta $cf75                                   // $5183
+    sta blip_sound                              // $5183
     lda #$08                                    // $5186
     sta zp_ff                                   // $5188
 L518a:
@@ -7880,10 +7956,10 @@ L518a:
     lda #$0f                                    // $5199
     jsr wait_frames                             // $519b
     lda #$00                                    // $519e
-    sta $cf75                                   // $51a0
+    sta blip_sound                              // $51a0
     sta SID_V2_CTRL                             // $51a3
     clc                                         // $51a6
-    jsr switch_sound                            // $51a7
+    jsr gate_sound                              // $51a7
     rts                                         // $51aa
 appear_sound:
     lda #$00                                    // $51ab
@@ -7897,7 +7973,7 @@ appear_sound:
     sta SID_V2_CTRL                             // $51c0
     rts                                         // $51c3
 appear_sound_step:
-    ldx $cf75                                   // $51c4
+    ldx blip_sound                              // $51c4
     beq L51f0                                   // $51c7
     dex                                         // $51c9
     bne L51e1                                   // $51ca
@@ -7906,13 +7982,13 @@ appear_sound_step:
     ldy scroll_hiscore_step                     // $51d0
     bne L51de                                   // $51d3
     lda #$08                                    // $51d5
-    ldy $cf84                                   // $51d7
+    ldy level_sign_on                           // $51d7
     beq L51de                                   // $51da
     lda #$09                                    // $51dc
 L51de:
     sta SID_V2_FREQ_HI                          // $51de
 L51e1:
-    stx $cf75                                   // $51e1
+    stx blip_sound                              // $51e1
     cpx #$01                                    // $51e4
     bne L51f0                                   // $51e6
     lda #$00                                    // $51e8
@@ -7931,7 +8007,7 @@ ball_dissolve:
     and #$f9                                    // $51f7
     sta VIC_SPR_ENABLE                          // $51f9
     lda sprite_ptrs+3                           // $51fc
-    sta switch_count                            // $51ff
+    sta gate_count                              // $51ff
     sec                                         // $5202
     sbc #$02                                    // $5203
     sta sprite_ptrs+3                           // $5205
@@ -7939,9 +8015,9 @@ ball_dissolve:
     lda #$14                                    // $520b
     jsr wait_frames                             // $520d
     ldx #$00                                    // $5210
-    stx $cfae                                   // $5212
-    stx $cfad                                   // $5215
-    lda switch_count                            // $5218
+    stx dissolve_time                           // $5212
+    stx dissolve_step                           // $5215
+    lda gate_count                              // $5218
     sta zp_fe                                   // $521b
     lda #$00                                    // $521d
     lsr zp_fe                                   // $521f
@@ -7959,7 +8035,7 @@ ball_dissolve:
     sta sprite_ptrs+3                           // $5234
     sta sprite_ptrs+4                           // $5237
     lda #$01                                    // $523a
-    sta $cf7a                                   // $523c
+    sta roll_sound_off                          // $523c
     lda #$80                                    // $523f
     sta SID_V3_CTRL                             // $5241
     lda #$ff                                    // $5244
@@ -7967,7 +8043,7 @@ ball_dissolve:
     lda #$00                                    // $5249
     sta zp_fa                                   // $524b
     lda #$00                                    // $524d
-    sta switch_index                            // $524f
+    sta gate_index                              // $524f
 L5252:
     dec zp_fa                                   // $5252
 L5254:
@@ -8002,18 +8078,18 @@ L5276:
     bpl L5256                                   // $527e
     lda zp_fa                                   // $5280
     bne L5292                                   // $5282
-    lda switch_count                            // $5284
+    lda gate_count                              // $5284
     sta sprite_ptrs+3                           // $5287
     sta sprite_ptrs+4                           // $528a
     lda #$00                                    // $528d
-    sta $cf7a                                   // $528f
+    sta roll_sound_off                          // $528f
 L5292:
     jsr dissolve_frame                          // $5292
     bcs L52a5                                   // $5295
-    dec switch_index                            // $5297
+    dec gate_index                              // $5297
     bpl L5254                                   // $529a
     lda #$01                                    // $529c
-    sta switch_index                            // $529e
+    sta gate_index                              // $529e
     lda zp_fa                                   // $52a1
     bne L5252                                   // $52a3
 L52a5:
@@ -8085,9 +8161,9 @@ L52ba:
     rts                                         // $532d
 init_frame_flash:
     lda #$01                                    // $532e
-    sta $cf91                                   // $5330
+    sta frame_flash_sides                       // $5330
     lda #$00                                    // $5333
-    sta $cf92                                   // $5335
+    sta frame_flash_corner                      // $5335
     ldx #$5f                                    // $5338
 L533a:
     ldy #$07                                    // $533a
@@ -8106,7 +8182,7 @@ L533c:
 // screen cells) while the board is tilted fully toward that side
 // ----------------------------------------------------------------------------
 frame_flash_left:
-    lda $cf91                                   // $534a
+    lda frame_flash_sides                       // $534a
     ldx tilt_shift_x                            // $534d
     cpx #$04                                    // $5350
     bne L536e                                   // $5352
@@ -8118,17 +8194,17 @@ frame_flash_left:
     and #$01                                    // $5360
     bne L53a0                                   // $5362
     ldy #$01                                    // $5364
-    lda $cf91                                   // $5366
+    lda frame_flash_sides                       // $5366
     ora #$01                                    // $5369
     jmp L5379                                   // $536b
 L536e:
     and #$01                                    // $536e
     beq L53a0                                   // $5370
     ldy #$00                                    // $5372
-    lda $cf91                                   // $5374
+    lda frame_flash_sides                       // $5374
     and #$fe                                    // $5377
 L5379:
-    sta $cf91                                   // $5379
+    sta frame_flash_sides                       // $5379
     ldx #$01                                    // $537c
 L537e:
     lda #$55                                    // $537e
@@ -8151,7 +8227,7 @@ L539a:
 L53a0:
     rts                                         // $53a0
 frame_flash_bottom:
-    lda $cf91                                   // $53a1
+    lda frame_flash_sides                       // $53a1
     ldx tilt_shift_x                            // $53a4
     cpx #$04                                    // $53a7
     bne L53c3                                   // $53a9
@@ -8162,17 +8238,17 @@ frame_flash_bottom:
     and #$04                                    // $53b5
     bne L53f7                                   // $53b7
     ldy #$01                                    // $53b9
-    lda $cf91                                   // $53bb
+    lda frame_flash_sides                       // $53bb
     ora #$04                                    // $53be
     jmp L53ce                                   // $53c0
 L53c3:
     and #$04                                    // $53c3
     beq L53f7                                   // $53c5
     ldy #$00                                    // $53c7
-    lda $cf91                                   // $53c9
+    lda frame_flash_sides                       // $53c9
     and #$fb                                    // $53cc
 L53ce:
-    sta $cf91                                   // $53ce
+    sta frame_flash_sides                       // $53ce
     ldx #$06                                    // $53d1
 L53d3:
     lda #$55                                    // $53d3
@@ -8196,7 +8272,7 @@ L53f1:
 L53f7:
     rts                                         // $53f7
 frame_flash_top:
-    lda $cf91                                   // $53f8
+    lda frame_flash_sides                       // $53f8
     ldx tilt_shift_y                            // $53fb
     cpx #$04                                    // $53fe
     bne L541c                                   // $5400
@@ -8208,17 +8284,17 @@ frame_flash_top:
     and #$08                                    // $540e
     bne L544b                                   // $5410
     ldy #$01                                    // $5412
-    lda $cf91                                   // $5414
+    lda frame_flash_sides                       // $5414
     ora #$08                                    // $5417
     jmp L5427                                   // $5419
 L541c:
     and #$08                                    // $541c
     beq L544b                                   // $541e
     ldy #$00                                    // $5420
-    lda $cf91                                   // $5422
+    lda frame_flash_sides                       // $5422
     and #$f7                                    // $5425
 L5427:
-    sta $cf91                                   // $5427
+    sta frame_flash_sides                       // $5427
     ldx #$00                                    // $542a
     tya                                         // $542c
     beq L5431                                   // $542d
@@ -8243,7 +8319,7 @@ D544c:
 D544e:
     .byte $bb,$7b                               // $544e
 frame_flash_right:
-    lda $cf91                                   // $5450
+    lda frame_flash_sides                       // $5450
     ldx tilt_shift_y                            // $5453
     cpx #$04                                    // $5456
     bne L5472                                   // $5458
@@ -8254,17 +8330,17 @@ frame_flash_right:
     and #$02                                    // $5464
     bne L54a1                                   // $5466
     ldy #$01                                    // $5468
-    lda $cf91                                   // $546a
+    lda frame_flash_sides                       // $546a
     ora #$02                                    // $546d
     jmp L547d                                   // $546f
 L5472:
     and #$02                                    // $5472
     beq L54a1                                   // $5474
     ldy #$00                                    // $5476
-    lda $cf91                                   // $5478
+    lda frame_flash_sides                       // $5478
     and #$fd                                    // $547b
 L547d:
-    sta $cf91                                   // $547d
+    sta frame_flash_sides                       // $547d
     ldx #$00                                    // $5480
     tya                                         // $5482
     beq L5487                                   // $5483
@@ -8289,23 +8365,23 @@ D54a2:
 D54a4:
     .byte $bb,$b9                               // $54a4
 frame_flash_vertical:
-    lda $cf91                                   // $54a6
+    lda frame_flash_sides                       // $54a6
     ldx tilt_shift_y                            // $54a9
     cpx #$04                                    // $54ac
     bne L54c3                                   // $54ae
     ldx tilt_dy                                 // $54b0
     bne L54c3                                   // $54b3
     ora #$20                                    // $54b5
-    sta $cf91                                   // $54b7
+    sta frame_flash_sides                       // $54b7
     ldx tilt_shift_x                            // $54ba
     lda D54f6,x                                 // $54bd
     jmp L54d1                                   // $54c0
 L54c3:
     and #$20                                    // $54c3
     beq L54f5                                   // $54c5
-    lda $cf91                                   // $54c7
+    lda frame_flash_sides                       // $54c7
     and #$df                                    // $54ca
-    sta $cf91                                   // $54cc
+    sta frame_flash_sides                       // $54cc
     lda #$00                                    // $54cf
 L54d1:
     ldx #$00                                    // $54d1
@@ -8331,14 +8407,14 @@ L54f5:
 D54f6:
     .byte $02,$02,$02,$00,$00,$00,$01,$01,$01   // $54f6
 frame_flash_horizontal:
-    lda $cf91                                   // $54ff
+    lda frame_flash_sides                       // $54ff
     ldx tilt_shift_x                            // $5502
     cpx #$04                                    // $5505
     bne L551d                                   // $5507
     ldx tilt_dx                                 // $5509
     bne L551d                                   // $550c
     ora #$10                                    // $550e
-    sta $cf91                                   // $5510
+    sta frame_flash_sides                       // $5510
     ldx tilt_shift_y                            // $5513
     lda D54f6,x                                 // $5516
     tay                                         // $5519
@@ -8346,14 +8422,14 @@ frame_flash_horizontal:
 L551d:
     and #$10                                    // $551d
     beq L555e                                   // $551f
-    lda $cf91                                   // $5521
+    lda frame_flash_sides                       // $5521
     and #$ef                                    // $5524
-    sta $cf91                                   // $5526
+    sta frame_flash_sides                       // $5526
     ldy #$00                                    // $5529
 L552b:
-    cpy $cf92                                   // $552b
+    cpy frame_flash_corner                      // $552b
     beq L555e                                   // $552e
-    sty $cf92                                   // $5530
+    sty frame_flash_corner                      // $5530
     ldx #$00                                    // $5533
 L5535:
     lda char($00),x                             // $5535
@@ -8403,23 +8479,23 @@ title_screen:
     sta music_command                           // $558a
     lda #$00                                    // $558d
     sta music_playing                           // $558f
-    sta $cfc8                                   // $5592
-    sta $cfca                                   // $5595
-    sta $cfcb                                   // $5598
+    sta m_key_up                                // $5592
+    sta title_idle                              // $5595
+    sta title_idle+1                            // $5598
     lda #$00                                    // $559b
     sta power_lo                                // $559d
     sta power_hi                                // $55a0
     sta game_over                               // $55a3
     sta power_drain_on                          // $55a6
-    sta $cfbf                                   // $55a9
-    sta $cf8d                                   // $55ac
+    sta backup_allowed                          // $55a9
+    sta demo_stops_at_end                       // $55ac
     sta demo_playing                            // $55af
-    sta $cf89                                   // $55b2
-    sta $cf8f                                   // $55b5
+    sta cf89_unused                             // $55b2
+    sta title_fine_scroll                       // $55b5
     lda #$27                                    // $55b8
-    sta $cf90                                   // $55ba
+    sta title_text_pos                          // $55ba
     lda #$0b                                    // $55bd
-    sta $cfbe                                   // $55bf
+    sta title_delay                             // $55bf
     jsr clear_buffers                           // $55c2
     jsr draw_logo_letters                       // $55c5
     lda #$08                                    // $55c8
@@ -8431,15 +8507,15 @@ title_screen:
     lda #$00                                    // $55d7
     sta demo_mode                               // $55d9
     sta tilt_angle_y                            // $55dc
-    sta cf0c                                    // $55df
+    sta tilt_shift_y_old                        // $55df
     lda #$0f                                    // $55e2
-    sta $cf78                                   // $55e4
+    sta title_rock_pause                        // $55e4
     lda #$04                                    // $55e7
-    sta cf0e                                    // $55e9
+    sta fine_scroll_x                           // $55e9
     lda #$08                                    // $55ec
     sta tilt_level_y                            // $55ee
     lda #$00                                    // $55f1
-    sta $cf77                                   // $55f3
+    sta title_rock_dir                          // $55f3
     lda #$01                                    // $55f6
     jsr wait_frames                             // $55f8
     lda #$00                                    // $55fb
@@ -8464,13 +8540,13 @@ title_loop_frame:
     jsr title_scroll_text                       // $562d
     lda #$18                                    // $5630
     sta screen_on                               // $5632
-    inc $cfca                                   // $5635
+    inc title_idle                              // $5635
     bne L563d                                   // $5638
-    inc $cfcb                                   // $563a
+    inc title_idle+1                            // $563a
 L563d:
-    lda $cfbe                                   // $563d
+    lda title_delay                             // $563d
     beq L5648                                   // $5640
-    dec $cfbe                                   // $5642
+    dec title_delay                             // $5642
     jmp title_loop_frame                        // $5645
 L5648:
     jsr read_controls                           // $5648  fire?
@@ -8481,9 +8557,9 @@ L5648:
     lda CIA1_PRB                                // $5654  F7?
     cmp #$f7                                    // $5657
     beq title_start_demo                        // $5659
-    lda $cfca                                   // $565b  $0F03 title frames without input?
+    lda title_idle                              // $565b  $0F03 title frames without input?
     cmp #$03                                    // $565e
-    lda $cfcb                                   // $5660
+    lda title_idle+1                            // $5660
     sbc #$0f                                    // $5663
     bcs title_start_demo                        // $5665
     jmp title_loop_frame                        // $5667
@@ -8492,7 +8568,7 @@ title_start_demo:
 title_done:
     jsr sid_off                                 // $566d
     lda #$00                                    // $5670
-    sta cfb8                                    // $5672
+    sta no_restart                              // $5672
     lda #$08                                    // $5675
     sta screen_on                               // $5677
     lda #$1f                                    // $567a
@@ -8506,14 +8582,14 @@ title_done:
 // ----------------------------------------------------------------------------
 title_irq:
     jsr title_scroll_step                       // $5685
-    lda $cf78                                   // $5688
+    lda title_rock_pause                        // $5688
     beq L5692                                   // $568b
-    dec $cf78                                   // $568d
+    dec title_rock_pause                        // $568d
     bne L56bd                                   // $5690
 L5692:
     ldy #$00                                    // $5692
     lda tilt_angle_y                            // $5694
-    ldx $cf77                                   // $5697
+    ldx title_rock_dir                          // $5697
     bne L56a9                                   // $569a
     clc                                         // $569c
     adc #$07                                    // $569d
@@ -8531,8 +8607,8 @@ L56a9:
     lda #$00                                    // $56b2
 L56b4:
     sta tilt_angle_y                            // $56b4
-    stx $cf77                                   // $56b7
-    sty $cf78                                   // $56ba
+    stx title_rock_dir                          // $56b7
+    sty title_rock_pause                        // $56ba
 L56bd:
     lda tilt_angle_y                            // $56bd
     ldx #$09                                    // $56c0
@@ -8547,7 +8623,7 @@ L56c2:
 L56cd:
     stx tilt_level_y                            // $56cd
     lda tilt_level_shift_y,x                    // $56d0
-    sta cf0f                                    // $56d3
+    sta fine_scroll_y                           // $56d3
     rts                                         // $56d6
 build_logo_masks:
     lda #$05                                    // $56d7
@@ -8577,34 +8653,34 @@ D56f7:
 draw_logo:
     lda tilt_level_y                            // $56fd
     sta tilt_shift_y                            // $5700
-    cmp cf0c                                    // $5703
+    cmp tilt_shift_y_old                        // $5703
     beq L5708                                   // $5706
 L5708:
-    jsr L59fb                                   // $5708
-    jsr L5a76                                   // $570b
-    jsr L5a59                                   // $570e
-    jsr L5a38                                   // $5711
-    jsr L5a1a                                   // $5714
+    jsr logo_fill_21e0                          // $5708
+    jsr logo_fill_2200                          // $570b
+    jsr logo_fill_21f8                          // $570e
+    jsr logo_fill_21f0                          // $5711
+    jsr logo_fill_21e8                          // $5714
     jsr logo_edge_left                          // $5717
     jsr logo_edge_right                         // $571a
-    jsr L5b0a                                   // $571d
-    jsr L5b85                                   // $5720
-    jsr L5bc8                                   // $5723
-    jsr L5c04                                   // $5726
-    jsr L5c40                                   // $5729
-    jsr L5c7c                                   // $572c
-    jsr L5c98                                   // $572f
-    jsr L5d59                                   // $5732
-    jsr L5cc5                                   // $5735
-    jsr L5d8c                                   // $5738
-    jsr L5cdf                                   // $573b
-    jsr L5d1d                                   // $573e
-    jsr L5dc1                                   // $5741
-    jsr L5dd4                                   // $5744
-    jsr L5df5                                   // $5747
-    jsr L5ab3                                   // $574a
+    jsr logo_corners_i                          // $571d
+    jsr logo_pick_l_chars                       // $5720
+    jsr logo_shade_l_1                          // $5723
+    jsr logo_shade_l_2                          // $5726
+    jsr logo_shade_l_3                          // $5729
+    jsr logo_part_5c7c                          // $572c
+    jsr logo_part_5c98                          // $572f
+    jsr logo_part_5d59                          // $5732
+    jsr logo_part_5cc5                          // $5735
+    jsr logo_part_5d8c                          // $5738
+    jsr logo_part_5cdf                          // $573b
+    jsr logo_part_5d1d                          // $573e
+    jsr logo_pick_t_char                        // $5741
+    jsr logo_shade_t                            // $5744
+    jsr logo_t_char_low                         // $5747
+    jsr logo_corners_t                          // $574a
     lda tilt_shift_y                            // $574d
-    sta cf0c                                    // $5750
+    sta tilt_shift_y_old                        // $5750
     rts                                         // $5753
 clear_buffers:
     lda #<screen_buffer                         // $5754
@@ -8794,7 +8870,13 @@ logo_edge_right_chars:
     .byte $20,$20,$20,$20,$20,$00,$00,$00,$3b,$3b,$20,$20,$20,$00,$00,$00  // $59d3
     .byte $3b,$3b,$3b,$20,$20,$00,$00,$00,$3a,$3a,$3b,$20,$20,$00,$00,$00  // $59e3
     .byte $3a,$3a,$3b,$20,$20,$00,$00,$00       // $59f3
-L59fb:
+
+// ----------------------------------------------------------------------------
+// Title logo helpers (called by draw_logo): build the edge and shading
+// characters $21E0-$22FF of the four letters for the current tilt
+// (tilt_shift_y 0-8), the same way build_wall_chars does for the maze
+// ----------------------------------------------------------------------------
+logo_fill_21e0:
     lda tilt_shift_y                            // $59fb
     asl                                         // $59fe
     cmp #$08                                    // $59ff
@@ -8814,7 +8896,7 @@ L5a11:
     cpx #$08                                    // $5a15
     bcc L5a0b                                   // $5a17
     rts                                         // $5a19
-L5a1a:
+logo_fill_21e8:
     lda tilt_shift_y                            // $5a1a
     asl                                         // $5a1d
     sec                                         // $5a1e
@@ -8834,7 +8916,7 @@ L5a31:
     dex                                         // $5a34
     bpl L5a2b                                   // $5a35
     rts                                         // $5a37
-L5a38:
+logo_fill_21f0:
     lda tilt_shift_y                            // $5a38
     clc                                         // $5a3b
     adc #$04                                    // $5a3c
@@ -8855,7 +8937,7 @@ L5a54:
     cpx #$08                                    // $5a54
     bcc L5a4a                                   // $5a56
     rts                                         // $5a58
-L5a59:
+logo_fill_21f8:
     lda tilt_shift_y                            // $5a59
     sec                                         // $5a5c
     sbc #$04                                    // $5a5d
@@ -8874,7 +8956,7 @@ L5a72:
     dex                                         // $5a72
     bpl L5a69                                   // $5a73
     rts                                         // $5a75
-L5a76:
+logo_fill_2200:
     ldx #$0f                                    // $5a76
     lda #$00                                    // $5a78
 L5a7a:
@@ -8914,7 +8996,7 @@ L5aa9:
     bpl L5aa9                                   // $5ab0
 L5ab2:
     rts                                         // $5ab2
-L5ab3:
+logo_corners_t:
     lda screen+13*40+7                          // $5ab3
     jsr char_addr_fb                            // $5ab6
     lda screen+13*40+9                          // $5ab9
@@ -8952,7 +9034,7 @@ L5ae2:
     lda #$45                                    // $5b04
     sta screen+13*40+29                         // $5b06
     rts                                         // $5b09
-L5b0a:
+logo_corners_i:
     lda screen+9*40+7                           // $5b0a
     jsr char_addr_fb                            // $5b0d
     lda screen+9*40+9                           // $5b10
@@ -9010,28 +9092,28 @@ L5b4b:
     lda #$49                                    // $5b7f
     sta screen+9*40+29                          // $5b81
     rts                                         // $5b84
-L5b85:
+logo_pick_l_chars:
     ldx tilt_shift_y                            // $5b85
-    lda D5bad,x                                 // $5b88
+    lda logo_l_chars_1,x                        // $5b88
     sta screen+8*40+4                           // $5b8b
     jsr logo_shade_char                         // $5b8e
     sta screen+8*40+34                          // $5b91
-    lda D5bb6,x                                 // $5b94
+    lda logo_l_chars_2,x                        // $5b94
     sta screen+8*40+5                           // $5b97
     jsr logo_shade_char                         // $5b9a
     sta screen+8*40+33                          // $5b9d
-    lda D5bbf,x                                 // $5ba0
+    lda logo_l_chars_3,x                        // $5ba0
     sta screen+8*40+12                          // $5ba3
     jsr logo_shade_char                         // $5ba6
     sta screen+8*40+26                          // $5ba9
     rts                                         // $5bac
-D5bad:
+logo_l_chars_1:
     .byte $00,$00,$00,$00,$00,$36,$38,$20,$20   // $5bad
-D5bb6:
+logo_l_chars_2:
     .byte $00,$00,$00,$00,$00,$00,$00,$00,$37   // $5bb6
-D5bbf:
+logo_l_chars_3:
     .byte $20,$20,$20,$20,$20,$3b,$3b,$3a,$3a   // $5bbf
-L5bc8:
+logo_shade_l_1:
     lda screen+8*40+4                           // $5bc8
     jsr char_addr_fb                            // $5bcb
     lda screen+8*40+5                           // $5bce
@@ -9059,7 +9141,7 @@ L5bd6:
     dey                                         // $5c00
     bpl L5bd6                                   // $5c01
     rts                                         // $5c03
-L5c04:
+logo_shade_l_2:
     lda screen+8*40+34                          // $5c04
     jsr char_addr_fb                            // $5c07
     lda screen+8*40+33                          // $5c0a
@@ -9087,7 +9169,7 @@ L5c12:
     dey                                         // $5c3c
     bpl L5c12                                   // $5c3d
     rts                                         // $5c3f
-L5c40:
+logo_shade_l_3:
     lda screen+8*40+12                          // $5c40
     jsr char_addr_fb                            // $5c43
     lda screen+8*40+26                          // $5c46
@@ -9115,7 +9197,7 @@ L5c4e:
     dey                                         // $5c78
     bpl L5c4e                                   // $5c79
     rts                                         // $5c7b
-L5c7c:
+logo_part_5c7c:
     ldx tilt_shift_y                            // $5c7c
     cpx #$02                                    // $5c7f
     bcs L5c97                                   // $5c81
@@ -9129,7 +9211,7 @@ L5c7c:
     sta screen+8*40+26                          // $5c94
 L5c97:
     rts                                         // $5c97
-L5c98:
+logo_part_5c98:
     lda tilt_shift_y                            // $5c98
     ldx #$00                                    // $5c9b
     cmp #$03                                    // $5c9d
@@ -9153,7 +9235,7 @@ L5cab:
     rts                                         // $5cbb
 D5cbc:
     .byte $00,$36,$36,$00,$00,$00,$36,$00,$00   // $5cbc
-L5cc5:
+logo_part_5cc5:
     lda tilt_shift_y                            // $5cc5
     ldx #$00                                    // $5cc8
     cmp #$06                                    // $5cca
@@ -9168,7 +9250,7 @@ L5cd0:
 L5cdb:
     stx screen+12*40+14                         // $5cdb
     rts                                         // $5cde
-L5cdf:
+logo_part_5cdf:
     lda screen+9*40+15                          // $5cdf
     jsr char_addr_fb                            // $5ce2
     lda screen+11*40+15                         // $5ce5
@@ -9198,7 +9280,7 @@ L5ced:
     lda #$57                                    // $5d17
     sta screen+11*40+15                         // $5d19
     rts                                         // $5d1c
-L5d1d:
+logo_part_5d1d:
     lda screen+8*40+14                          // $5d1d
     jsr char_addr_fb                            // $5d20
     lda screen+12*40+14                         // $5d23
@@ -9226,7 +9308,7 @@ L5d2b:
     dey                                         // $5d55
     bpl L5d2b                                   // $5d56
     rts                                         // $5d58
-L5d59:
+logo_part_5d59:
     lda tilt_shift_y                            // $5d59
     ldx #$00                                    // $5d5c
     cmp #$03                                    // $5d5e
@@ -9250,7 +9332,7 @@ L5d6c:
     rts                                         // $5d7c
 D5d7d:
     .byte $00,$00,$00,$39,$39,$00,$00,$00,$00,$00,$39,$39,$39,$00,$00  // $5d7d
-L5d8c:
+logo_part_5d8c:
     lda screen+7*40+21                          // $5d8c
     jsr char_addr_fb                            // $5d8f
     lda screen+11*40+21                         // $5d92
@@ -9275,14 +9357,14 @@ L5d9a:
     lda #$5d                                    // $5dbb
     sta screen+11*40+21                         // $5dbd
     rts                                         // $5dc0
-L5dc1:
+logo_pick_t_char:
     ldx tilt_shift_y                            // $5dc1
-    lda D5dcb,x                                 // $5dc4
+    lda logo_t_chars,x                          // $5dc4
     sta screen+12*40+27                         // $5dc7
     rts                                         // $5dca
-D5dcb:
+logo_t_chars:
     .byte $3a,$3a,$39,$39,$00,$00,$00,$00,$00   // $5dcb
-L5dd4:
+logo_shade_t:
     lda screen+12*40+27                         // $5dd4
     jsr char_addr_fb                            // $5dd7
     ldy #$07                                    // $5dda
@@ -9299,7 +9381,7 @@ L5ddc:
     dey                                         // $5df1
     bpl L5ddc                                   // $5df2
     rts                                         // $5df4
-L5df5:
+logo_t_char_low:
     ldx tilt_shift_y                            // $5df5
     cpx #$07                                    // $5df8
     bcc L5e01                                   // $5dfa
@@ -9308,17 +9390,17 @@ L5df5:
 L5e01:
     rts                                         // $5e01
 title_scroll_step:
-    dec $cf8f                                   // $5e02
+    dec title_fine_scroll                       // $5e02
     bpl L5e19                                   // $5e05
     lda #$07                                    // $5e07
-    sta $cf8f                                   // $5e09
-    ldx $cf90                                   // $5e0c
+    sta title_fine_scroll                       // $5e09
+    ldx title_text_pos                          // $5e0c
     inx                                         // $5e0f
     cpx #$74                                    // $5e10
     bcc L5e16                                   // $5e12
     ldx #$00                                    // $5e14
 L5e16:
-    stx $cf90                                   // $5e16
+    stx title_text_pos                          // $5e16
 L5e19:
     rts                                         // $5e19
 
@@ -9331,7 +9413,7 @@ title_scroll_text:
     sta zp_fe                                   // $5e1e
     ldx #$70                                    // $5e20
     ldy #$98                                    // $5e22
-    lda cf0f                                    // $5e24
+    lda fine_scroll_y                           // $5e24
     cmp #$03                                    // $5e27
     bne L5e32                                   // $5e29
     stx zp_fd                                   // $5e2b
@@ -9341,7 +9423,7 @@ L5e32:
     stx zp_fb                                   // $5e32
     sty zp_fd                                   // $5e34
 L5e36:
-    ldx $cf90                                   // $5e36
+    ldx title_text_pos                          // $5e36
     ldy #$27                                    // $5e39
 L5e3b:
     lda #$20                                    // $5e3b
@@ -9393,13 +9475,13 @@ title_music_key:
     lda CIA1_PRB                                // $5ee8
     cmp #$ef                                    // $5eeb
     bne L5f36                                   // $5eed
-    lda $cfc8                                   // $5eef
+    lda m_key_up                                // $5eef
     beq L5f3b                                   // $5ef2
     lda #$00                                    // $5ef4
-    sta $cfc8                                   // $5ef6
+    sta m_key_up                                // $5ef6
     sta music_playing                           // $5ef9
-    sta $cfca                                   // $5efc
-    sta $cfcb                                   // $5eff
+    sta title_idle                              // $5efc
+    sta title_idle+1                            // $5eff
     lda #$ff                                    // $5f02
     sta music_command                           // $5f04
     lda cefa_flag                               // $5f07
@@ -9422,7 +9504,7 @@ title_music_key:
     jmp L5f3b                                   // $5f33
 L5f36:
     lda #$01                                    // $5f36
-    sta $cfc8                                   // $5f38
+    sta m_key_up                                // $5f38
 L5f3b:
     lda cefa_flag                               // $5f3b
     beq L5f5d                                   // $5f3e
@@ -9437,8 +9519,8 @@ L5f50:
     lda #$01                                    // $5f50
     sta music_command                           // $5f52
     lda #$00                                    // $5f55
-    sta $cfca                                   // $5f57
-    sta $cfcb                                   // $5f5a
+    sta title_idle                              // $5f57
+    sta title_idle+1                            // $5f5a
 L5f5d:
     jsr music_play                              // $5f5d
     rts                                         // $5f60
@@ -9452,9 +9534,9 @@ level_jingle:
     lda cefa_flag                               // $5f66
     beq L5fa1                                   // $5f69
     lda #$01                                    // $5f6b
-    sta $cf7a                                   // $5f6d
+    sta roll_sound_off                          // $5f6d
     lda #$80                                    // $5f70
-    sta $cfc9                                   // $5f72
+    sta jingle_timer                            // $5f72
     lda #$03                                    // $5f75
     sta music_command                           // $5f77
 L5f7a:
@@ -9463,7 +9545,7 @@ L5f7a:
     jsr music_play                              // $5f7f
     lda #$04                                    // $5f82
     sta SID_MODE_VOL                            // $5f84
-    dec $cfc9                                   // $5f87
+    dec jingle_timer                            // $5f87
     bne L5f7a                                   // $5f8a
     jsr sid_off                                 // $5f8c
     lda #$1f                                    // $5f8f
@@ -9471,7 +9553,7 @@ L5f7a:
     lda #$44                                    // $5f94
     sta SID_RES_FILT                            // $5f96
     lda #$00                                    // $5f99
-    sta $cf7a                                   // $5f9b
+    sta roll_sound_off                          // $5f9b
     jmp L5fa6                                   // $5f9e
 L5fa1:
     lda #$19                                    // $5fa1
@@ -9488,9 +9570,9 @@ game_over_jingle:
     bne L5fe7                                   // $5fac  always: the jingle below is never played
     jsr show_power_off                          // $5fae
     lda #$01                                    // $5fb1
-    sta $cf7a                                   // $5fb3
+    sta roll_sound_off                          // $5fb3
     lda #$80                                    // $5fb6
-    sta $cfc9                                   // $5fb8
+    sta jingle_timer                            // $5fb8
     lda #$04                                    // $5fbb
     sta music_command                           // $5fbd
 L5fc0:
@@ -9499,7 +9581,7 @@ L5fc0:
     jsr music_play                              // $5fc5
     lda #$04                                    // $5fc8
     sta SID_MODE_VOL                            // $5fca
-    dec $cfc9                                   // $5fcd
+    dec jingle_timer                            // $5fcd
     bne L5fc0                                   // $5fd0
     jsr sid_off                                 // $5fd2
     lda #$1f                                    // $5fd5
@@ -9507,7 +9589,7 @@ L5fc0:
     lda #$44                                    // $5fda
     sta SID_RES_FILT                            // $5fdc
     lda #$00                                    // $5fdf
-    sta $cf7a                                   // $5fe1
+    sta roll_sound_off                          // $5fe1
     jmp L5fec                                   // $5fe4
 L5fe7:
     lda #$14                                    // $5fe7
@@ -9558,7 +9640,7 @@ L601e:
     cmp #$ef                                    // $602b
     bne irq_frame_work                          // $602d
     lda title_mode                              // $602f
-    ora cfb8                                    // $6032
+    ora no_restart                              // $6032
     bne irq_frame_work                          // $6035
     ldx #$fe                                    // $6037  F1: restart the game
     sei                                         // $6039
@@ -9631,31 +9713,31 @@ L609d:
 L60a3:
     dex                                         // $60a3
     bpl L60a3                                   // $60a4
-    lda cf0f                                    // $60a6
+    lda fine_scroll_y                           // $60a6
     ora screen_on                               // $60a9
     tay                                         // $60ac
-    lda cf0e                                    // $60ad
+    lda fine_scroll_x                           // $60ad
     ora #$d0                                    // $60b0
     ldx #$08                                    // $60b2
     stx VIC_BG0                                 // $60b4
     stx VIC_BORDER                              // $60b7
     sty VIC_CTRL1                               // $60ba
     ldx #$d0                                    // $60bd
-    lda cf0e                                    // $60bf
+    lda fine_scroll_x                           // $60bf
     ora slide_state                             // $60c2
     ora title_mode                              // $60c5
     bne L60cc                                   // $60c8
     ldx #$d8                                    // $60ca
 L60cc:
     txa                                         // $60cc
-    ora cf0e                                    // $60cd
+    ora fine_scroll_x                           // $60cd
     sta VIC_CTRL2                               // $60d0
     rts                                         // $60d3
 L60d4:
     cmp #$04                                    // $60d4
     bne L60f4                                   // $60d6
     ldx #$04                                    // $60d8
-    lda cf0f                                    // $60da
+    lda fine_scroll_y                           // $60da
     bne L60e2                                   // $60dd
     sec                                         // $60df
     bcs L60e8                                   // $60e0
@@ -9709,7 +9791,7 @@ L6135:
     ldx #$15                                    // $6138
     ldy #$1b                                    // $613a
     lda #$c0                                    // $613c
-    ora $cf8f                                   // $613e
+    ora title_fine_scroll                       // $613e
     stx VIC_MEMSETUP                            // $6141
     sty VIC_CTRL1                               // $6144
     sta VIC_CTRL2                               // $6147
@@ -9786,7 +9868,7 @@ frame_logic:
 L61bf:
     lda demo_mode                               // $61bf
     bne L61d1                                   // $61c2
-    lda cf52                                    // $61c4
+    lda controls_enabled                        // $61c4
     beq L61d1                                   // $61c7
     jsr read_controls                           // $61c9  not in demo mode: read the joystick
     and #$1f                                    // $61cc
@@ -9794,11 +9876,11 @@ L61bf:
 L61d1:
     jsr demo_play                               // $61d1
     lda controls                                // $61d4
-    sta $cf8c                                   // $61d7
+    sta controls_copy                           // $61d7
     lda ball_lost                               // $61da
     ora ball_in_hole                            // $61dd
     bne frame_update                            // $61e0
-    lda VIC_SPR_BG_COLL                         // $61e2  ball sprite (3) touches the maze foreground: fell into a hole
+    lda VIC_SPR_BG_COLL                         // $61e2  ball sprite (3) touches foreground pixels (a wall or a closed gate)
     and #$08                                    // $61e5
     beq L6225                                   // $61e7
     lda #$01                                    // $61e9
@@ -9806,12 +9888,12 @@ L61d1:
     lda #$00                                    // $61ee
     sta ball_vx                                 // $61f0
     sta ball_vy                                 // $61f3
-    sta cf52                                    // $61f6
-    sta cf53                                    // $61f9
-    sta cf51                                    // $61fc
+    sta controls_enabled                        // $61f6
+    sta tilt_enabled                            // $61f9
+    sta fire_enabled                            // $61fc
     sta steering_on                             // $61ff
     sta marking_on                              // $6202
-    sta $cfbf                                   // $6205
+    sta backup_allowed                          // $6205
     lda #$1f                                    // $6208
     sta controls                                // $620a
     lda backup_power                            // $620d  that was the backup power: game over
@@ -9830,10 +9912,10 @@ L6225:
     lda #$01                                    // $622a
     sta ball_in_hole                            // $622c
     lda #$00                                    // $622f
-    sta cf52                                    // $6231
-    sta cf53                                    // $6234
+    sta controls_enabled                        // $6231
+    sta tilt_enabled                            // $6234
     sta steering_on                             // $6237
-    sta $cf9a                                   // $623a
+    sta count_marks_delay                       // $623a
     sta power_drain_on                          // $623d
     lda #$1f                                    // $6240
     sta controls                                // $6242
@@ -9849,9 +9931,9 @@ frame_update:
     lda #$05                                    // $625a
     sta scroll_pause                            // $625c
 L625f:
-    lda $cfbc                                   // $625f
+    lda bg2_restore_timer                       // $625f
     beq L626e                                   // $6262
-    dec $cfbc                                   // $6264
+    dec bg2_restore_timer                       // $6264
     bne L626e                                   // $6267
     lda #$01                                    // $6269
     sta VIC_BG2                                 // $626b
@@ -9866,7 +9948,7 @@ L626e:
     jsr flash_lost                              // $6283
     jsr steer_ball                              // $6286  ball physics
     jsr move_ball                               // $6289
-    lda cf53                                    // $628c
+    lda tilt_enabled                            // $628c
     beq L62a0                                   // $628f
     jsr ease_tilt                               // $6291
     jsr tilt_clunk_sound                        // $6294
@@ -9874,7 +9956,7 @@ L626e:
     jsr pick_ball_frame                         // $629a
     jsr place_ball_sprite                       // $629d
 L62a0:
-    lda $cf7a                                   // $62a0
+    lda roll_sound_off                          // $62a0
     bne L62a8                                   // $62a3
     jsr roll_sound                              // $62a5
 L62a8:
@@ -9884,18 +9966,18 @@ L62a8:
     jsr mark_floor                              // $62b0
 L62b3:
     lda steering_on                             // $62b3
-    ora $cf73                                   // $62b6
+    ora ball_waiting                            // $62b6
     beq L62be                                   // $62b9
     jsr move_shine                              // $62bb
 L62be:
     jsr appear_sound_step                       // $62be
-    lda $cf73                                   // $62c1
+    lda ball_waiting                            // $62c1
     beq L62c9                                   // $62c4
     jsr update_shadow                           // $62c6
 L62c9:
-    lda cf51                                    // $62c9
+    lda fire_enabled                            // $62c9
     beq L62d1                                   // $62cc
-    jsr fire_switches                           // $62ce
+    jsr fire_gates                              // $62ce
 L62d1:
     lda demo_mode                               // $62d1
     beq L62d9                                   // $62d4
@@ -9907,10 +9989,10 @@ L62d9:
 L62e1:
     jsr slide_scroll                            // $62e1
     jsr count_marks                             // $62e4
-    jsr switch_hit_anim                         // $62e7
+    jsr gate_hit_anim                           // $62e7
     jsr bumper_hit_anim                         // $62ea
     jsr two_tone_sound                          // $62ed
-    lda $cf84                                   // $62f0
+    lda level_sign_on                           // $62f0
     bne L6318                                   // $62f3
     lda ball_x                                  // $62f5  ball sprites 2 and 3 at the ball position
     sta VIC_SPR3_X                              // $62f8
@@ -9945,10 +10027,10 @@ update_tilt_graphics:
     lda tilt_level_y                            // $632a
     sta tilt_shift_y                            // $632d
     lda tilt_shift_x                            // $6330
-    cmp cf0b                                    // $6333
+    cmp tilt_shift_x_old                        // $6333
     bne L6343                                   // $6336
     lda tilt_shift_y                            // $6338
-    cmp cf0c                                    // $633b
+    cmp tilt_shift_y_old                        // $633b
     bne L6343                                   // $633e
     jmp update_tilt_done                        // $6340
 L6343:
@@ -9990,19 +10072,19 @@ L6343:
     jsr pick_hole_sprite                        // $63a4
     jsr mask_hole_sprite                        // $63a7
     lda #$01                                    // $63aa
-    sta $cfa7                                   // $63ac
+    sta ball_frame_changed                      // $63ac
 update_tilt_done:
     ldx tilt_shift_x                            // $63af
-    stx cf0b                                    // $63b2
+    stx tilt_shift_x_old                        // $63b2
     ldx tilt_shift_y                            // $63b5
-    stx cf0c                                    // $63b8
+    stx tilt_shift_y_old                        // $63b8
     lda steering_on                             // $63bb
-    ora $cf73                                   // $63be
+    ora ball_waiting                            // $63be
     beq L63d0                                   // $63c1
-    lda $cfa7                                   // $63c3
+    lda ball_frame_changed                      // $63c3
     beq L63d0                                   // $63c6
     lda #$00                                    // $63c8
-    sta $cfa7                                   // $63ca
+    sta ball_frame_changed                      // $63ca
     jsr mask_ball_sprite                        // $63cd
 L63d0:
     rts                                         // $63d0
@@ -10018,15 +10100,15 @@ init_level_sign:
     and #$cc                                    // $63dc
     sta VIC_SPR_PRIORITY                        // $63de
     lda #$00                                    // $63e1
-    sta cf53                                    // $63e3
-    sta cf51                                    // $63e6
+    sta tilt_enabled                            // $63e3
+    sta fire_enabled                            // $63e6
     jsr sid_off                                 // $63e9
     lda #$00                                    // $63ec
-    sta $cf82                                   // $63ee
+    sta sign_spin_speed                         // $63ee
     lda #$50                                    // $63f1
-    sta $cf83                                   // $63f3
+    sta sign_spin                               // $63f3
     lda #$01                                    // $63f6
-    sta $cf84                                   // $63f8
+    sta level_sign_on                           // $63f8
     lda #$80                                    // $63fb
     sta SID_V1_SR                               // $63fd
     lda #$04                                    // $6400
@@ -10038,11 +10120,11 @@ init_level_sign:
     lda #$11                                    // $640f
     sta SID_V2_CTRL                             // $6411
     lda #$07                                    // $6414
-    sta $cf7f                                   // $6416
+    sta sign_x_left                             // $6416
     lda #$4f                                    // $6419
-    sta $cf80                                   // $641b
+    sta sign_x_right                            // $641b
     lda #$d6                                    // $641e
-    sta $cf81                                   // $6420
+    sta sign_y                                  // $6420
     lda VIC_SPR_X_MSB                           // $6423
     and #$ee                                    // $6426
     ora #$22                                    // $6428
@@ -10062,9 +10144,9 @@ init_level_sign:
     ora #$20                                    // $644d
     sta VIC_SPR_EXPAND_X                        // $644f
     lda #$00                                    // $6452
-    sta $cf7a                                   // $6454
+    sta roll_sound_off                          // $6454
     lda #$01                                    // $6457
-    sta $cf85                                   // $6459
+    sta sign_sound_on                           // $6459
     lda #$01                                    // $645c
     jsr wait_frames                             // $645e
     lda VIC_SPR_ENABLE                          // $6461
@@ -10083,16 +10165,16 @@ level_sign_spin:
     clc                                         // $647b
     adc #$01                                    // $647c
 L647e:
-    sta $cf82                                   // $647e
+    sta sign_spin_speed                         // $647e
 L6481:
-    lda $cf84                                   // $6481
+    lda level_sign_on                           // $6481
     bne L6489                                   // $6484
     jmp L64f7                                   // $6486
 L6489:
-    lda $cf83                                   // $6489
+    lda sign_spin                               // $6489
     clc                                         // $648c
-    adc $cf82                                   // $648d
-    sta $cf83                                   // $6490
+    adc sign_spin_speed                         // $648d
+    sta sign_spin                               // $6490
     and #$7f                                    // $6493
     lsr                                         // $6495
     lsr                                         // $6496
@@ -10107,7 +10189,7 @@ L6489:
     sta sprite_ptrs+1                           // $64a3
     ldx #$00                                    // $64a6
     ldy #$02                                    // $64a8
-    lda $cf83                                   // $64aa
+    lda sign_spin                               // $64aa
     bpl L64b3                                   // $64ad
     ldx #$02                                    // $64af
     ldy #$00                                    // $64b1
@@ -10115,19 +10197,19 @@ L64b3:
     stx VIC_SPR0_COL                            // $64b3
     stx VIC_SPR1_COL                            // $64b6
     sty VIC_SPR_MC1                             // $64b9
-    lda $cf7f                                   // $64bc
+    lda sign_x_left                             // $64bc
     sta VIC_SPR0_X                              // $64bf
-    lda $cf80                                   // $64c2
+    lda sign_x_right                            // $64c2
     sta VIC_SPR1_X                              // $64c5
-    lda $cf81                                   // $64c8
+    lda sign_y                                  // $64c8
     sta VIC_SPR0_Y                              // $64cb
     sta VIC_SPR1_Y                              // $64ce
     jsr level_sign_place                        // $64d1
-    ldx $cf85                                   // $64d4
+    ldx sign_sound_on                           // $64d4
     beq L64f7                                   // $64d7
     lda #$00                                    // $64d9
     sta zp_fa                                   // $64db
-    lda $cf82                                   // $64dd
+    lda sign_spin_speed                         // $64dd
     bpl L64e7                                   // $64e0
     eor #$ff                                    // $64e2
     clc                                         // $64e4
@@ -10145,7 +10227,7 @@ L64e9:
 L64f7:
     rts                                         // $64f7
 level_sign_place:
-    lda $cf7f                                   // $64f8
+    lda sign_x_left                             // $64f8
     cmp #$18                                    // $64fb
     bcs L6504                                   // $64fd
     ldx #$00                                    // $64ff
@@ -10170,11 +10252,11 @@ L651b:
 L6520:
     sta VIC_SPR_EXPAND_X                        // $6520
     stx VIC_SPR4_X                              // $6523
-    lda $cf80                                   // $6526
+    lda sign_x_right                            // $6526
     clc                                         // $6529
     adc #$18                                    // $652a
     sta VIC_SPR5_X                              // $652c
-    lda $cf81                                   // $652f
+    lda sign_y                                  // $652f
     sta VIC_SPR4_Y                              // $6532
     sta VIC_SPR5_Y                              // $6535
     rts                                         // $6538
@@ -10191,53 +10273,53 @@ level_sign_slide_in:
 L6544:
     stx zp_fa                                   // $6544
     lda #$01                                    // $6546
-    sta $cf75                                   // $6548
+    sta blip_sound                              // $6548
 L654b:
     lda #$01                                    // $654b
     jsr wait_frames                             // $654d
-    inc $cf7f                                   // $6550
-    dec $cf80                                   // $6553
-    lda $cf80                                   // $6556
+    inc sign_x_left                             // $6550
+    dec sign_x_right                            // $6553
+    lda sign_x_right                            // $6556
     cmp #$09                                    // $6559
     bcs L654b                                   // $655b
     lda #$00                                    // $655d
-    sta $cf75                                   // $655f
+    sta blip_sound                              // $655f
     sta SID_V2_FREQ_HI                          // $6562
     sec                                         // $6565
-    jsr switch_sound                            // $6566
+    jsr gate_sound                              // $6566
 L6569:
     lda #$05                                    // $6569
     jsr wait_frames                             // $656b
     lda zp_fa                                   // $656e
     bpl L6578                                   // $6570
-    dec $cf82                                   // $6572
+    dec sign_spin_speed                         // $6572
     jmp L657b                                   // $6575
 L6578:
-    inc $cf82                                   // $6578
+    inc sign_spin_speed                         // $6578
 L657b:
-    cmp $cf82                                   // $657b
+    cmp sign_spin_speed                         // $657b
     bne L6569                                   // $657e
     lda #$14                                    // $6580
     jsr wait_frames                             // $6582
     lda #$01                                    // $6585
-    sta $cf75                                   // $6587
+    sta blip_sound                              // $6587
 L658a:
     lda #$04                                    // $658a
     jsr wait_frames                             // $658c
-    inc $cf81                                   // $658f
-    lda $cf81                                   // $6592
+    inc sign_y                                  // $658f
+    lda sign_y                                  // $6592
     cmp #$dd                                    // $6595
     bcc L658a                                   // $6597
     lda #$00                                    // $6599
-    sta $cf75                                   // $659b
+    sta blip_sound                              // $659b
     sta SID_V2_FREQ_HI                          // $659e
     lda #$01                                    // $65a1
-    sta $cf7a                                   // $65a3
+    sta roll_sound_off                          // $65a3
     rts                                         // $65a6
 level_sign_slide_out:
     lda #$00                                    // $65a7
-    sta $cf82                                   // $65a9
-    sta $cf7a                                   // $65ac
+    sta sign_spin_speed                         // $65a9
+    sta roll_sound_off                          // $65ac
     lda #$1e                                    // $65af
     jsr wait_frames                             // $65b1
     jsr sid_off                                 // $65b4
@@ -10246,36 +10328,36 @@ level_sign_slide_out:
     lda #$11                                    // $65bc
     sta SID_V2_CTRL                             // $65be
     lda #$01                                    // $65c1
-    sta $cf75                                   // $65c3
+    sta blip_sound                              // $65c3
 L65c6:
     lda #$04                                    // $65c6
     jsr wait_frames                             // $65c8
-    dec $cf81                                   // $65cb
-    lda $cf81                                   // $65ce
+    dec sign_y                                  // $65cb
+    lda sign_y                                  // $65ce
     cmp #$d6                                    // $65d1
     bne L65c6                                   // $65d3
     lda #$00                                    // $65d5
-    sta $cf75                                   // $65d7
+    sta blip_sound                              // $65d7
     sta SID_V2_FREQ_HI                          // $65da
     lda #$14                                    // $65dd
     jsr wait_frames                             // $65df
     lda #$01                                    // $65e2
-    sta $cf75                                   // $65e4
+    sta blip_sound                              // $65e4
 L65e7:
     lda #$01                                    // $65e7
     jsr wait_frames                             // $65e9
-    inc $cf80                                   // $65ec
-    dec $cf7f                                   // $65ef
-    lda $cf80                                   // $65f2
+    inc sign_x_right                            // $65ec
+    dec sign_x_left                             // $65ef
+    lda sign_x_right                            // $65f2
     cmp #$4f                                    // $65f5
     bne L65e7                                   // $65f7
     lda #$00                                    // $65f9
-    sta $cf75                                   // $65fb
+    sta blip_sound                              // $65fb
     sta SID_V2_FREQ_HI                          // $65fe
     lda #$14                                    // $6601
     jsr wait_frames                             // $6603
     lda #$00                                    // $6606
-    sta $cf84                                   // $6608
+    sta level_sign_on                           // $6608
     lda VIC_SPR_ENABLE                          // $660b
     and #$cc                                    // $660e
     sta VIC_SPR_ENABLE                          // $6610
@@ -10295,7 +10377,7 @@ slide_noise:
     sta SID_FC_HI                               // $6630
     lda slide_speed                             // $6633
     asl                                         // $6636
-    ldx $cf85                                   // $6637
+    ldx sign_sound_on                           // $6637
     beq L6642                                   // $663a
     ldx slide_out_flag                          // $663c
     beq L6642                                   // $663f
@@ -10307,7 +10389,7 @@ L6646:
     and #$f0                                    // $6646
     sta zp_fa                                   // $6648
     sta SID_V3_SR                               // $664a
-    lda $cf86                                   // $664d
+    lda slide_noise_old                         // $664d
     cmp zp_fa                                   // $6650
     bcs L6659                                   // $6652
     lda #$80                                    // $6654
@@ -10316,7 +10398,7 @@ L6659:
     lda #$81                                    // $6659
     sta SID_V3_CTRL                             // $665b
     lda zp_fa                                   // $665e
-    sta $cf86                                   // $6660
+    sta slide_noise_old                         // $6660
     rts                                         // $6663
 
 // ----------------------------------------------------------------------------
@@ -10377,7 +10459,7 @@ L6709:
     beq L6719                                   // $670c
     lda ball_in_hole                            // $670e
     ora ball_lost                               // $6711
-    and $cf8d                                   // $6714
+    and demo_stops_at_end                       // $6714
     beq L671e                                   // $6717
 L6719:
     lda #$00                                    // $6719
@@ -10451,7 +10533,7 @@ L6788:
     rts                                         // $67af
 shine_off_sound:
     lda #$00                                    // $67b0
-    sta $cf93                                   // $67b2
+    sta shine_state                             // $67b2
     lda #$0f                                    // $67b5
     sta SID_V3_FREQ_HI                          // $67b7
     lda #$80                                    // $67ba
@@ -10472,30 +10554,30 @@ shine_off_sound:
     rts                                         // $67e0
 
 // ----------------------------------------------------------------------------
-// Colour the switch blocks that are off
+// Colour the gate that are off
 // ----------------------------------------------------------------------------
-draw_switch_colours:
+draw_gate_colours:
     ldx maze                                    // $67e1
-    lda maze_switch_index,x                     // $67e4
+    lda maze_gate_index,x                       // $67e4
     sta zp_fb                                   // $67e7
     lda #$08                                    // $67e9
     sta zp_ff                                   // $67eb
-    lda switch_mask                             // $67ed
+    lda gate_mask                               // $67ed
     sta zp_fa                                   // $67f0
 L67f2:
     ror zp_fa                                   // $67f2
     bcs L6826                                   // $67f4
     ldx zp_fb                                   // $67f6
-    lda switch_table,x                          // $67f8
+    lda gate_table,x                            // $67f8
     sta zp_fd                                   // $67fb
     inx                                         // $67fd
-    lda switch_table,x                          // $67fe
+    lda gate_table,x                            // $67fe
     clc                                         // $6801
     adc #$78                                    // $6802
     sta zp_fe                                   // $6804
     inx                                         // $6806
     ldy #$00                                    // $6807
-    lda switch_table,x                          // $6809
+    lda gate_table,x                            // $6809
     beq L6810                                   // $680c
     ldy #$03                                    // $680e
 L6810:
@@ -10504,9 +10586,9 @@ L6810:
     sta zp_fc                                   // $6814
     ldx zp_f9                                   // $6816
 L6818:
-    lda switch_cell_layout,x                    // $6818
+    lda gate_cell_layout,x                      // $6818
     tay                                         // $681b
-    lda switch_colour_table,x                   // $681c
+    lda gate_colour_table,x                     // $681c
     sta (zp_fd),y                               // $681f
     inx                                         // $6821
     dec zp_fc                                   // $6822
@@ -10519,7 +10601,7 @@ L6826:
     dec zp_ff                                   // $682d
     bne L67f2                                   // $682f
     rts                                         // $6831
-switch_colour_table:
+gate_colour_table:
     .byte $fd,$fe,$ff,$fa,$fb,$fc,$9d,$9e,$9f,$9a,$9b,$9c,$0a,$20,$02,$06  // $6832
     .byte $20,$0e                               // $6842
 
@@ -10527,7 +10609,7 @@ switch_colour_table:
 // Light the edges of the walls the board leans on (characters $27D0+)
 // ----------------------------------------------------------------------------
 update_edge_highlight:
-    lda $cf94                                   // $6844
+    lda edge_highlight_on                       // $6844
     bne L685e                                   // $6847
     lda clunk_state                             // $6849
     beq L6856                                   // $684c
@@ -10548,7 +10630,7 @@ edge_highlight_v:
     bcs L686a                                   // $6866
     lda #$00                                    // $6868
 L686a:
-    sta $cf94                                   // $686a
+    sta edge_highlight_on                       // $686a
     ldx tilt_shift_x                            // $686d
     lda D68ea,x                                 // $6870
     sta zp_fb                                   // $6873
@@ -10700,7 +10782,7 @@ D69dd:
 
 // ----------------------------------------------------------------------------
 // End of level, in the IRQ: take the floor marks off one by one; each
-// gives power. A mark that is no longer a mark character (a switch block
+// gives power. A mark that is no longer a mark character (a gate
 // was drawn over it, or cells $FB / $FE) scores that block instead.
 // ----------------------------------------------------------------------------
 count_marks:
@@ -10710,7 +10792,7 @@ count_marks:
     bne L69ff                                   // $69ee
     lda #$02                                    // $69f0
     sta count_marks_on                          // $69f2
-    ldx cf55                                    // $69f5
+    ldx mark_count                              // $69f5
     bne L6a02                                   // $69f8
     lda #$00                                    // $69fa
     sta count_marks_on                          // $69fc
@@ -10718,7 +10800,7 @@ L69ff:
     jmp L6a65                                   // $69ff
 L6a02:
     dex                                         // $6a02
-    stx cf55                                    // $6a03
+    stx mark_count                              // $6a03
     lda colour_buffer,x                         // $6a06
     sta zp_fd                                   // $6a09
     lda colour_buffer+6*40+16,x                 // $6a0b
@@ -10734,11 +10816,11 @@ L6a1c:
     sta (zp_fd),y                               // $6a1e
     jmp L6a2b                                   // $6a20
 L6a23:
-    ldx $cf9a                                   // $6a23
+    ldx count_marks_delay                       // $6a23
     bne L6a2b                                   // $6a26
     jsr unmark_special                          // $6a28
 L6a2b:
-    ldx cf55                                    // $6a2b
+    ldx mark_count                              // $6a2b
     beq L6a47                                   // $6a2e
     dex                                         // $6a30
     lda colour_buffer,x                         // $6a31
@@ -10752,7 +10834,7 @@ L6a2b:
     lda #$b2                                    // $6a43
     sta (zp_fd),y                               // $6a45
 L6a47:
-    lda $cf9a                                   // $6a47
+    lda count_marks_delay                       // $6a47
     bne L6a5d                                   // $6a4a
     lda game_over                               // $6a4c
     bne L6a5d                                   // $6a4f
@@ -10763,9 +10845,9 @@ L6a47:
 L6a5a:
     jsr add_power                               // $6a5a
 L6a5d:
-    lda $cf9a                                   // $6a5d
+    lda count_marks_delay                       // $6a5d
     beq L6a65                                   // $6a60
-    dec $cf9a                                   // $6a62
+    dec count_marks_delay                       // $6a62
 L6a65:
     rts                                         // $6a65
 unmark_special:
@@ -10791,26 +10873,26 @@ L6a86:
     bne L6a8f                                   // $6a88
     lda #$51                                    // $6a8a
 L6a8c:
-    jsr switch_hit                              // $6a8c
+    jsr gate_hit                                // $6a8c
 L6a8f:
     rts                                         // $6a8f
 bonus_count_sound:
-    lda $cfa5                                   // $6a90
+    lda bonus_sound_on                          // $6a90
     bne L6a98                                   // $6a93
     jmp L6b16                                   // $6a95
 L6a98:
     lda bonus_left                              // $6a98
     bne L6aa5                                   // $6a9b
-    sta $cfbb                                   // $6a9d
+    sta bonus_flash                             // $6a9d
     lda #$00                                    // $6aa0
     jmp L6ab8                                   // $6aa2
 L6aa5:
-    ldx $cfbb                                   // $6aa5
+    ldx bonus_flash                             // $6aa5
     dex                                         // $6aa8
     bpl L6aad                                   // $6aa9
     ldx #$01                                    // $6aab
 L6aad:
-    stx $cfbb                                   // $6aad
+    stx bonus_flash                             // $6aad
     lda #$01                                    // $6ab0
     cpx #$01                                    // $6ab2
     bcs L6ab8                                   // $6ab4
@@ -10866,10 +10948,10 @@ L6b16:
 
 // ----------------------------------------------------------------------------
 // Params: zp_fd/zp_fe = screen address, A = offset
-// Find the switch at that address: C = 0 found (zp_fa = table index,
+// Find the gate at that address: C = 0 found (zp_fa = table index,
 // zp_ff = its bit), C = 1 not found
 // ----------------------------------------------------------------------------
-find_switch:
+find_gate:
     sta zp_fa                                   // $6b17
     lda zp_fd                                   // $6b19
     sec                                         // $6b1b
@@ -10879,18 +10961,18 @@ find_switch:
     sbc #$00                                    // $6b22
     sta zp_fc                                   // $6b24
     ldx maze                                    // $6b26
-    lda maze_switch_index,x                     // $6b29
+    lda maze_gate_index,x                       // $6b29
     sta zp_fa                                   // $6b2c
     lda #$01                                    // $6b2e
     sta zp_ff                                   // $6b30
     ldy #$08                                    // $6b32
 L6b34:
     ldx zp_fa                                   // $6b34
-    lda switch_table,x                          // $6b36
+    lda gate_table,x                            // $6b36
     cmp zp_fb                                   // $6b39
     bne L6b45                                   // $6b3b
     inx                                         // $6b3d
-    lda switch_table,x                          // $6b3e
+    lda gate_table,x                            // $6b3e
     cmp zp_fc                                   // $6b41
     beq L6b54                                   // $6b43
 L6b45:
@@ -10909,35 +10991,35 @@ L6b55:
     rts                                         // $6b55
 
 // ----------------------------------------------------------------------------
-// A switch was hit: switch it off, animate and score it
+// A gate was hit by the mark count: remove it from the mask, animate and score it
 // ----------------------------------------------------------------------------
-switch_hit:
-    jsr find_switch                             // $6b56
+gate_hit:
+    jsr find_gate                               // $6b56
     bcs L6b8b                                   // $6b59
     lda zp_ff                                   // $6b5b
     eor #$ff                                    // $6b5d
-    and switch_mask                             // $6b5f
-    sta switch_mask                             // $6b62
+    and gate_mask                               // $6b5f
+    sta gate_mask                               // $6b62
     lda zp_fa                                   // $6b65
-    ldx $cf96                                   // $6b67
+    ldx gate_hit_timer                          // $6b67
     beq L6b7b                                   // $6b6a
     pha                                         // $6b6c
     lda #$04                                    // $6b6d
-    sta $cf99                                   // $6b6f
+    sta gate_hit_frame                          // $6b6f
     lda #$01                                    // $6b72
-    sta $cf96                                   // $6b74
-    jsr switch_hit_anim                         // $6b77
+    sta gate_hit_timer                          // $6b74
+    jsr gate_hit_anim                           // $6b77
     pla                                         // $6b7a
 L6b7b:
-    sta $cf98                                   // $6b7b
+    sta gate_hit_index                          // $6b7b
     lda #$00                                    // $6b7e
-    sta $cf99                                   // $6b80
+    sta gate_hit_frame                          // $6b80
     lda #$01                                    // $6b83
-    sta $cf96                                   // $6b85
-    jsr switch_hit_sound                        // $6b88
+    sta gate_hit_timer                          // $6b85
+    jsr gate_hit_sound                          // $6b88
 L6b8b:
     rts                                         // $6b8b
-switch_hit_sound:
+gate_hit_sound:
     lda #$00                                    // $6b8c
     sta SID_V2_CTRL                             // $6b8e
     sta SID_V2_SR                               // $6b91
@@ -10955,20 +11037,20 @@ switch_hit_sound:
 // ----------------------------------------------------------------------------
 bumper_hit:
     lda #$29                                    // $6ba7
-    jsr find_switch                             // $6ba9
+    jsr find_gate                               // $6ba9
     bcs L6c07                                   // $6bac
     lda zp_fa                                   // $6bae
-    ldx $cf9d                                   // $6bb0
+    ldx bumper_timer                            // $6bb0
     beq L6bbf                                   // $6bb3
     pha                                         // $6bb5
     lda #$01                                    // $6bb6
-    sta $cf9d                                   // $6bb8
+    sta bumper_timer                            // $6bb8
     jsr bumper_hit_anim                         // $6bbb
     pla                                         // $6bbe
 L6bbf:
-    sta $cf9e                                   // $6bbf
+    sta bumper_index                            // $6bbf
     lda #$10                                    // $6bc2
-    sta $cf9d                                   // $6bc4
+    sta bumper_timer                            // $6bc4
     lda #$00                                    // $6bc7
     sta SID_V2_CTRL                             // $6bc9
     sta SID_V2_AD                               // $6bcc
@@ -10999,24 +11081,24 @@ L6c00:
     sta bonus_left                              // $6c04
 L6c07:
     rts                                         // $6c07
-switch_hit_anim:
-    lda $cf96                                   // $6c08
+gate_hit_anim:
+    lda gate_hit_timer                          // $6c08
     beq L6c61                                   // $6c0b
-    dec $cf96                                   // $6c0d
+    dec gate_hit_timer                          // $6c0d
     bne L6c61                                   // $6c10
     lda #$01                                    // $6c12
     ldx ball_in_hole                            // $6c14
     bne L6c1b                                   // $6c17
     lda #$02                                    // $6c19
 L6c1b:
-    sta $cf96                                   // $6c1b
-    inc $cf99                                   // $6c1e
-    lda $cf99                                   // $6c21
+    sta gate_hit_timer                          // $6c1b
+    inc gate_hit_frame                          // $6c1e
+    lda gate_hit_frame                          // $6c21
     cmp #$05                                    // $6c24
     bcc L6c45                                   // $6c26
-    jsr switch_hit_anim_sound                   // $6c28
+    jsr gate_hit_anim_sound                     // $6c28
     ldx #$00                                    // $6c2b
-    stx $cf96                                   // $6c2d
+    stx gate_hit_timer                          // $6c2d
     lda #$01                                    // $6c30
     jsr bonus_power                             // $6c32
     lda #$05                                    // $6c35
@@ -11028,22 +11110,22 @@ L6c3e:
     adc bonus_left                              // $6c3f
     sta bonus_left                              // $6c42
 L6c45:
-    lda $cf99                                   // $6c45
+    lda gate_hit_frame                          // $6c45
     asl                                         // $6c48
     sta zp_fb                                   // $6c49
     asl                                         // $6c4b
     asl                                         // $6c4c
     clc                                         // $6c4d
     adc zp_fb                                   // $6c4e
-    sta switch_gfx_offset                       // $6c50
+    sta gate_gfx_offset                         // $6c50
     lda #$00                                    // $6c53
-    sta switch_page_add                         // $6c55
-    lda $cf98                                   // $6c58
-    sta switch_index                            // $6c5b
-    jsr draw_switch                             // $6c5e
+    sta gate_page_add                           // $6c55
+    lda gate_hit_index                          // $6c58
+    sta gate_index                              // $6c5b
+    jsr draw_gate                               // $6c5e
 L6c61:
     rts                                         // $6c61
-switch_hit_anim_sound:
+gate_hit_anim_sound:
     lda #$00                                    // $6c62
     sta SID_V1_CTRL                             // $6c64
     sta SID_V1_SR                               // $6c67
@@ -11056,11 +11138,11 @@ switch_hit_anim_sound:
     sta SID_V1_CTRL                             // $6c79
     rts                                         // $6c7c
 bumper_hit_anim:
-    lda $cf9d                                   // $6c7d
+    lda bumper_timer                            // $6c7d
     bne L6c85                                   // $6c80
     jmp L6cf5                                   // $6c82
 L6c85:
-    dec $cf9d                                   // $6c85
+    dec bumper_timer                            // $6c85
     bne L6c9a                                   // $6c88
     lda #$05                                    // $6c8a
     ldx ball_in_hole                            // $6c8c
@@ -11071,16 +11153,16 @@ L6c93:
     adc bonus_left                              // $6c94
     lda bonus_left                              // $6c97
 L6c9a:
-    ldx $cf9e                                   // $6c9a
-    lda switch_table,x                          // $6c9d
+    ldx bumper_index                            // $6c9a
+    lda gate_table,x                            // $6c9d
     sta zp_fb                                   // $6ca0
     inx                                         // $6ca2
-    lda switch_table,x                          // $6ca3
+    lda gate_table,x                            // $6ca3
     sta zp_fc                                   // $6ca6
     inx                                         // $6ca8
-    ldy switch_table,x                          // $6ca9
+    ldy gate_table,x                            // $6ca9
     sty zp_fa                                   // $6cac
-    lda $cf9d                                   // $6cae
+    lda bumper_timer                            // $6cae
     bne L6cbc                                   // $6cb1
     iny                                         // $6cb3
     iny                                         // $6cb4
@@ -11114,10 +11196,10 @@ L6cc8:
     sta zp_f9                                   // $6cde
 L6ce0:
     ldy zp_fa                                   // $6ce0
-    lda switch_cell_layout,y                    // $6ce2
+    lda gate_cell_layout,y                      // $6ce2
     tay                                         // $6ce5
     ldx zp_f8                                   // $6ce6
-    lda switch_colour_table,x                   // $6ce8
+    lda gate_colour_table,x                     // $6ce8
     sta (zp_fb),y                               // $6ceb
     inc zp_fa                                   // $6ced
     inc zp_f8                                   // $6cef
@@ -11130,7 +11212,7 @@ D6cf6:
 freeze_edge_highlight:
     lda #$01                                    // $6cfa
     jsr wait_frames                             // $6cfc
-    lda $cf94                                   // $6cff
+    lda edge_highlight_on                       // $6cff
     clc                                         // $6d02
     pha                                         // $6d03
     bne L6d07                                   // $6d04
@@ -11157,15 +11239,15 @@ L6d1f:
     jsr edge_highlight_h                        // $6d24
     rts                                         // $6d27
 flash_lost:
-    lda cf18                                    // $6d28
+    lda flash_step                              // $6d28
     beq L6d90                                   // $6d2b
-    dec cf17                                    // $6d2d
+    dec flash_phase                             // $6d2d
     bpl L6d3a                                   // $6d30
     lda #$02                                    // $6d32
-    sta cf17                                    // $6d34
-    inc cf18                                    // $6d37
+    sta flash_phase                             // $6d34
+    inc flash_step                              // $6d37
 L6d3a:
-    ldx cf17                                    // $6d3a
+    ldx flash_phase                             // $6d3a
     lda #$00                                    // $6d3d
     cpx #$00                                    // $6d3f
     beq L6d51                                   // $6d41
@@ -11176,13 +11258,13 @@ L6d3a:
     lda maze_floor_colours,y                    // $6d4c
     and #$07                                    // $6d4f
 L6d51:
-    ldy cf18                                    // $6d51
+    ldy flash_step                              // $6d51
     cpy #$10                                    // $6d54
     bne L6d63                                   // $6d56
     cpx #$00                                    // $6d58
     bne L6d61                                   // $6d5a
     ldy #$00                                    // $6d5c
-    sty cf18                                    // $6d5e
+    sty flash_step                              // $6d5e
 L6d61:
     lda #$01                                    // $6d61
 L6d63:
@@ -11344,11 +11426,11 @@ D6e59:
 // Two-tone sound (steps counted by $CFA8), after the last maze of a level
 // ----------------------------------------------------------------------------
 two_tone_sound:
-    ldx $cfa8                                   // $6e62
+    ldx two_tone_timer                          // $6e62
     beq L6ebd                                   // $6e65
     dex                                         // $6e67
     bne L6eba                                   // $6e68
-    lda $cfa9                                   // $6e6a
+    lda two_tone_step                           // $6e6a
     bne L6e8d                                   // $6e6d
     ldx #$00                                    // $6e6f
     stx SID_V1_CTRL                             // $6e71
@@ -11380,11 +11462,11 @@ L6e99:
 L6eab:
     stx SID_V2_FREQ_LO                          // $6eab
     sty SID_V2_FREQ_HI                          // $6eae
-    ldy $cfa9                                   // $6eb1
+    ldy two_tone_step                           // $6eb1
     ldx D6ebe,y                                 // $6eb4
-    inc $cfa9                                   // $6eb7
+    inc two_tone_step                           // $6eb7
 L6eba:
-    stx $cfa8                                   // $6eba
+    stx two_tone_timer                          // $6eba
 L6ebd:
     rts                                         // $6ebd
 D6ebe:
@@ -11595,16 +11677,16 @@ L6ffa:
 dissolve_frame:
     lda #$01                                    // $7001
     jsr wait_frames                             // $7003
-    dec $cfae                                   // $7006
+    dec dissolve_time                           // $7006
     bpl L7063                                   // $7009
-    ldx $cfad                                   // $700b
+    ldx dissolve_step                           // $700b
     dex                                         // $700e
     bpl L7013                                   // $700f
     ldx #$05                                    // $7011
 L7013:
-    stx $cfad                                   // $7013
+    stx dissolve_step                           // $7013
     lda dissolve_durations,x                    // $7016
-    sta $cfae                                   // $7019
+    sta dissolve_time                           // $7019
     lda dissolve_colours,x                      // $701c
     sta VIC_SPR3_COL                            // $701f
     cpx #$00                                    // $7022
@@ -11669,7 +11751,7 @@ L708b:
     lda #$ff                                    // $7091
     sta CIA1_DDRA                               // $7093
     lda #$01                                    // $7096
-    sta cfb8                                    // $7098
+    sta no_restart                              // $7098
     lda #$08                                    // $709b
     sta screen_on                               // $709d
     lda #$07                                    // $70a0
@@ -11776,8 +11858,8 @@ L7142:
     jsr fill_colour_buffer                      // $7161
     jsr show_buffers                            // $7164
     lda #$01                                    // $7167
-    sta cf53                                    // $7169
-    sta cf52                                    // $716c
+    sta tilt_enabled                            // $7169
+    sta controls_enabled                        // $716c
     lda #$80                                    // $716f
     sta $028a                                   // $7171
     ldx #$1c                                    // $7174
@@ -11887,7 +11969,7 @@ L7206:
     lda #$2a                                    // $7253  first raster IRQ at line $2A
     sta VIC_RASTER                              // $7255
     lda #$01                                    // $7258
-    sta cf0f                                    // $725a
+    sta fine_scroll_y                           // $725a
     lda VIC_IRQ_STATUS                          // $725d
     sta VIC_IRQ_STATUS                          // $7260
     cli                                         // $7263
@@ -12099,22 +12181,22 @@ L737e:
 drain_power:
     lda power_drain_on                          // $737f
     beq L73ca                                   // $7382
-    lda cf53                                    // $7384
+    lda tilt_enabled                            // $7384
     beq L73ca                                   // $7387
     lda clunk_state                             // $7389
     beq L73ca                                   // $738c
     lda #$f2                                    // $738e
     jsr add_power                               // $7390
-    lda $cfbf                                   // $7393
+    lda backup_allowed                          // $7393
     beq L73ca                                   // $7396
     lda power_hi                                // $7398
     bne L73ca                                   // $739b
     jsr show_backup                             // $739d
     lda #$01                                    // $73a0
     sta backup_power                            // $73a2
-    sta $cfb9                                   // $73a5
+    sta backup_flash_step                       // $73a5
     lda #$28                                    // $73a8
-    sta $cfba                                   // $73aa
+    sta backup_alarm_freq                       // $73aa
     lda #$00                                    // $73ad
     sta power_drain_on                          // $73af
     lda #$00                                    // $73b2
@@ -12168,7 +12250,7 @@ colour_marks:
 L7400:
     sta zp_fa                                   // $7400
     ldy #$00                                    // $7402
-    ldx cf55                                    // $7404
+    ldx mark_count                              // $7404
     beq L7429                                   // $7407
 L7409:
     dex                                         // $7409
@@ -12217,14 +12299,14 @@ flash_backup:
     beq L7475                                   // $7441
     dex                                         // $7443
     bne L7464                                   // $7444
-    ldy $cfb9                                   // $7446
+    ldy backup_flash_step                       // $7446
     dey                                         // $7449
     bpl L7453                                   // $744a
     ldy #$05                                    // $744c
     lda #$19                                    // $744e
-    sta $cfba                                   // $7450
+    sta backup_alarm_freq                       // $7450
 L7453:
-    sty $cfb9                                   // $7453
+    sty backup_flash_step                       // $7453
     ldx #$05                                    // $7456
     lda D7476,y                                 // $7458
 L745b:
@@ -12234,11 +12316,11 @@ L745b:
     ldx D747c,y                                 // $7461
 L7464:
     stx backup_power                            // $7464
-    lda $cfb9                                   // $7467
+    lda backup_flash_step                       // $7467
     beq L746f                                   // $746a
-    inc $cfba                                   // $746c
+    inc backup_alarm_freq                       // $746c
 L746f:
-    lda $cfba                                   // $746f
+    lda backup_alarm_freq                       // $746f
     sta SID_V1_FREQ_HI                          // $7472
 L7475:
     rts                                         // $7475
@@ -12459,9 +12541,9 @@ colour_status_marks:
 // Short sound when a diagonal tilt is held
 // ----------------------------------------------------------------------------
 diagonal_sound:
-    ldx $cfbd                                   // $7567
+    ldx diagonal_sound_timer                    // $7567
     beq L7593                                   // $756a
-    dec $cfbd                                   // $756c
+    dec diagonal_sound_timer                    // $756c
     cpx #$02                                    // $756f
     bne L7582                                   // $7571
     lda #$46                                    // $7573

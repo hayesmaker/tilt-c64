@@ -131,8 +131,8 @@ then run until the ball drops into the exit hole or is lost""",
     0x466d: 'Silence: clear SID registers $D400-$D414',
     0x4678: """The ball is in the exit hole: drop it in, shake the board, count the
 bonus, then slide to the next maze (after maze 3: next level)""",
-    0x46ec: """The ball fell into a hole: sound, flash, then level the board and
-count the bonus; if that was the last of the power: game over""",
+    0x46ec: """The ball touched a wall: sound, flash, then level the board and count
+the bonus; if that was the BACKUP power: game over""",
     0x47a5: """Count the floor marks back (count_marks, IRQ) for bonus points and
 power, until all counters are done""",
     0x483c: """All four mazes done: slide them past once more (mazes 2, 1, 0), then
@@ -184,7 +184,7 @@ COMMENTS = {
     0x4541: 'score = 0',
     0x45fa: 'ball appears, wait for fire',
     0x464d: 'until in the hole or lost',
-    0x61e2: 'ball sprite (3) touches the maze foreground: fell into a hole',
+    0x61e2: 'ball sprite (3) touches foreground pixels (a wall or a closed gate)',
     0x5648: 'fire?',
     0x5654: 'F7?',
     0x565b: '$0F03 title frames without input?',
@@ -192,3 +192,64 @@ COMMENTS = {
     0x4b21: 'scroll the six digits one pixel up',
     0x4e0a: 'smaller ball sprite',
 }
+
+# title logo edge helpers, called in order by draw_logo
+LABELS.update({
+    0x59fb: 'logo_fill_21e0',
+    0x5a1a: 'logo_fill_21e8',
+    0x5a38: 'logo_fill_21f0',
+    0x5a59: 'logo_fill_21f8',
+    0x5a76: 'logo_fill_2200',
+    0x5ab3: 'logo_corners_t',
+    0x5b0a: 'logo_corners_i',
+    0x5b85: 'logo_pick_l_chars',
+    0x5bad: 'logo_l_chars_1',
+    0x5bb6: 'logo_l_chars_2',
+    0x5bbf: 'logo_l_chars_3',
+    0x5bc8: 'logo_shade_l_1',
+    0x5c04: 'logo_shade_l_2',
+    0x5c40: 'logo_shade_l_3',
+    0x5c7c: 'logo_part_5c7c',
+    0x5c98: 'logo_part_5c98',
+    0x5cc5: 'logo_part_5cc5',
+    0x5cdf: 'logo_part_5cdf',
+    0x5d1d: 'logo_part_5d1d',
+    0x5d59: 'logo_part_5d59',
+    0x5d8c: 'logo_part_5d8c',
+    0x5dc1: 'logo_pick_t_char',
+    0x5dcb: 'logo_t_chars',
+    0x5dd4: 'logo_shade_t',
+    0x5df5: 'logo_t_char_low',
+})
+BLOCK_COMMENTS.update({
+    0x59fb: """Title logo helpers (called by draw_logo): build the edge and shading
+characters $21E0-$22FF of the four letters for the current tilt
+(tilt_shift_y 0-8), the same way build_wall_chars does for the maze""",
+})
+
+COMMENTS.update({
+    # play_level
+    0x4597: 'power drains with each clunk, BACKUP allowed',
+    0x459f: 'sprites 1-4 off',
+    0x45a7: 'speed class and tilt rate from the level (max 4)',
+    0x45b9: 'ball size = level - 3, limited to 1-6: the ball grows from level 5 on',
+    0x45d3: 'maze to the buffers, ball to its start',
+    0x45df: 'new level and a bigger ball: dissolve the old one first',
+    0x45fd: 'shadow sprite off',
+    0x4605: 'clear the sprite-background collision latch',
+    0x4616: 'shine sprite frame',
+    0x4620: 'all game updates on',
+    0x4646: 'the frame work runs in the IRQ; here only the tilt graphics',
+    0x4655: 'in the hole: next maze',
+    0x4660: 'touched a wall',
+    # init_game
+    0x4537: 'maze',
+    0x4534: 'level',
+    0x4557: 'exit hole of the first maze',
+    0x455a: 'exit hole sprite frame',
+})
+BLOCK_COMMENTS.update({
+    0x4597: """Play one maze (one ball): set up, let the ball appear and wait for
+fire, then run until the ball drops into the exit hole or rolls off the
+touches a wall. Speed, tilt rate and ball size grow with the level.""",
+})

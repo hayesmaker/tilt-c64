@@ -2,6 +2,11 @@
 tilt graphics: wall-edge characters and the board frame ($0C33-$19B7),
 sounds, controls ($19B8-$1B6E)."""
 
+FORMATS = {
+    0x0b89: ('rows', 8),
+    0x08b0: ('text',),
+}
+
 LABELS = {
     # ---- start-up
     0x080d: 'start',
@@ -101,10 +106,13 @@ Y 16 bit: frac, position)""",
 toward the target speed for that direction. A diagonal held for a while
 is remembered for a few frames (diag_hold_*), so that releasing one
 direction a little early does not stop the diagonal roll.""",
-    0x0b45: """Params: X, Y = tilt direction (-1/0/1)
-Returns: A = target speed for this direction and speed class""",
-    0x0b64: """Params: A = value, X = target, Y = step
-Returns: A moved by at most Y toward X (all signed)""",
+    0x0b45: """Params: X = tilt direction of this axis, Y = of the other axis (-1/0/1)
+Returns: A = target velocity + $80 for this axis and speed class.
+Diagonal tilts give a lower speed per axis (e.g. 68 instead of 96).""",
+    0x0b89: """Target velocities + $80, 8 bytes per speed class:
+X = -1, 0, +1 (diagonal), unused, X = -1, 0, +1 (straight), unused""",
+    0x0b64: """Params: A = velocity (signed), X = target velocity + $80, Y = step
+Returns: A moved by at most Y toward the target""",
     0x0bb1: """Split the acceleration over X and Y in proportion to how far each
 velocity is from its target, so the ball turns smoothly.""",
     0x0c33: """Build the wall-edge characters ($2008-$20C7) for the current maze
@@ -115,6 +123,11 @@ these characters hold every combination of edges.""",
 perspective shift (tilt_level, cf0e/cf0f)""",
     0x0dff: """Params: A = angle, X = direction (-1/0/1)
 Returns: A moved by tilt_rate toward 0, $80 or 255""",
+    0x08b0: """Leftover of the developer's BASIC loader (tokenized, $93 = LOAD):
+  LOAD "CHAR35-42.MOD",8,1   LOAD "CHAR100-119.MOD",8,1   LOAD "TABLES.MOD",8,1
+  LOAD "SPRITES.MOD",8,1     LOAD "COSINE.MOD",8,1        LOAD "DEMO.MOD",8,1
+  LOAD "MUSIC.MOD",8,1
+The game was put together from these modules. Not used.""",
     0x1596: """Rolling noise: SID voice 3 noise, volume and filter follow the ball speed""",
     0x1647: """Ball (sprite 4) position = ball position + perspective shift - 4""",
     0x1687: """Params: X, Y = perspective shift 0-8
@@ -126,7 +139,10 @@ Returns: X, Y = start/end of the visible side of the board frame""",
     0x19b8: """Tilt "clunk" sound when the tilt direction changes (voice 2)""",
     0x1ab6: """Read the controls: joystick in port 2 ANDed with keys on the keyboard.
 Returns A = joystick style bits, active low: 0 up, 1 down, 2 left,
-3 right, 4 fire. SPACE is fire; see the comments for the direction keys.
+3 right, 4 fire. Keys, one "diamond" for each hand:
+    right hand:  * up   ; left   RETURN right   right SHIFT down
+    left hand:   Q / CTRL up   RUN/STOP left   A right   left SHIFT down
+    SPACE fire
 Pressing two opposite directions cancels both.""",
 }
 
@@ -151,9 +167,38 @@ COMMENTS = {
     0x1b4b: 'up and down together: neither',
     0x1b54: 'left and right together: neither',
     0x1b61: 'read joystick port 2 with port A as input',
-    0x1abf: 'SPACE: fire',
-    0x1acf: 'RETURN or A',
-    0x1aeb: '; or RUN/STOP',
-    0x1b07: 'right SHIFT or left SHIFT',
-    0x1b23: '* (or = and ; ... see the bits)',
+    0x1abf: 'fire: SPACE',
+    0x1acf: 'right: RETURN or A',
+    0x1aeb: 'left: ; or RUN/STOP',
+    0x1b07: 'down: right SHIFT or left SHIFT',
+    0x1b23: 'up: *, or Q / CTRL (ignored while ; or right SHIFT is down)',
+    # velocity_to_delta
+    0x09d8: 'C=1: shift count 2 (velocity * 4)',
+    0x09dc: 'remember the sign',
+    0x09e2: 'work with |velocity|',
+    0x09ed: 'shift into zp_fb (low) and A (high)',
+    0x09f5: 'negative: negate the 16 bit result',
+    # move_ball
+    0x0a0b: 'X: frac/low += velocity * 4',
+    0x0a23: 'carry into bit 8 (sign of the delta decides up or down)',
+    0x0a34: 'Y: frac/position += velocity * 4',
+    # steer_ball
+    0x0a4d: 'remember the old tilt direction',
+    0x0a5e: 'X = number of directions pressed',
+    0x0a69: 'diagonal: remember it',
+    0x0a7e: 'held long enough: diagonal sound once',
+    0x0a94: 'one direction after a diagonal: keep the diagonal for 8 frames',
+    0x0aa7: 'no direction: restore a recent diagonal',
+    0x0ac4: 'set tilt_dx / tilt_dy from the control bits',
+    0x0ad0: 'left (bit 2)',
+    0x0ada: 'right (bit 3)',
+    0x0ae5: 'up (bit 0)',
+    0x0aef: 'down (bit 1)',
+    0x0afa: 'target speeds for X and Y',
+    0x0b10: 'direction changed: new acceleration split',
+    0x0b23: 'steering off while the ball appears / drops',
+    0x0b28: 'velocity -> target speed by the acceleration',
+    # target_speed
+    0x0b45: 'other axis -1/+1 -> row 0 (diagonal), 0 -> row 1',
+    0x0b56: '8 entries per speed class',
 }

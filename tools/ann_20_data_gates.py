@@ -1,5 +1,5 @@
 """Annotations: data $1B6F-$38BF (demo recording, tables, maze screens,
-sprites), switches $38C0-$3BD4, floor marks $3BD5-$3CF6, ball shading
+sprites), gates $38C0-$3BD4, floor marks $3BD5-$3CF6, ball shading
 sprites $3D12-$4028, maze setup $4029-$4263."""
 
 LABELS = {
@@ -10,19 +10,19 @@ LABELS = {
     0x1e00: 'corner_pixels',
     0x3800: 'shine_offset_table',
     0x3880: 'sprite_mask_buffer',
-    # switches
+    # gates
     0x38c0: 'build_chars_2508',
-    0x38cf: 'draw_switches',
-    0x3939: 'draw_switch',
-    0x3979: 'switch_masks_by_level',
-    0x398d: 'maze_switch_index',
-    0x3991: 'switch_table',
-    0x39f1: 'switch_cell_offsets',
-    0x3a31: 'switch_chars',
-    0x3b2d: 'fire_switches',
-    0x3b9b: 'switch_anim_start',
-    0x3ba0: 'switch_anim_end',
-    0x3ba5: 'switch_sound',
+    0x38cf: 'draw_gates',
+    0x3939: 'draw_gate',
+    0x3979: 'gate_masks_by_level',
+    0x398d: 'maze_gate_index',
+    0x3991: 'gate_table',
+    0x39f1: 'gate_cell_offsets',
+    0x3a31: 'gate_chars',
+    0x3b2d: 'fire_gates',
+    0x3b9b: 'gate_anim_start',
+    0x3ba0: 'gate_anim_end',
+    0x3ba5: 'gate_sound',
     # floor marks
     0x3bd5: 'mark_floor',
     0x3c7e: 'mark_cell',
@@ -50,8 +50,8 @@ LABELS = {
     0x415d: 'colour_frame',
     0x4195: 'maze_floor_colours',
     0x4199: 'maze_frame_colours',
-    0x419d: 'colour_switches',
-    0x41f0: 'switch_cell_layout',
+    0x419d: 'colour_gates',
+    0x41f0: 'gate_cell_layout',
     0x41fc: 'next_maze_slide',
     0x4255: 'slide_wait',
     0x4263: 'slide_in',
@@ -85,20 +85,20 @@ ball dissolve buffer; $3700/$3780: ball / hole sprites masked to the
 current tilt.""",
     0x3800: 'Shine offset for each value of shine_x / shine_y',
     0x38c0: '$2508-$2587 = (characters $2008-$2087 << 1) | $55',
-    0x38cf: """Draw the switch blocks of the maze.
-C = 0: draw the switches whose state changed (switch_frame) into the
+    0x38cf: """Draw the gate of the maze.
+C = 0: draw the gates whose state changed (gate_frame) into the
        screen buffer at $7C00
-C = 1: (re)draw all switches set in the level's mask""",
-    0x3939: """Draw one switch block: switch_index = entry in switch_table
+C = 1: (re)draw all gates set in the level's mask""",
+    0x3939: """Draw one gate: gate_index = entry in gate_table
 (3 bytes: screen offset low, high, orientation)""",
-    0x3979: """Switch masks: 4 masks per level (one per maze), levels 1-5
+    0x3979: """Gate masks: 4 masks per level (one per maze), levels 1-5
 (level 5 and up use the last row)""",
-    0x398d: 'Index of each maze\'s first entry in switch_table (8 entries of 3 bytes per maze)',
-    0x3991: """Switches: 8 per maze. Screen offset (low, high) of the switch block
+    0x398d: 'Index of each maze\'s first entry in gate_table (8 entries of 3 bytes per maze)',
+    0x3991: """Gates: 8 per maze. Screen offset (low, high) of the gate
 and its orientation (0-3)""",
-    0x3b2d: """Fire button: start the switch animation (once per press). The
-switches flip over in steps (switch_frame); the sound plays on the way.""",
-    0x3ba5: 'Switch sound (voice 3 noise): C = 1 high, C = 0 low',
+    0x3b2d: """Fire button: start the gate animation (once per press). The
+gates flip over in steps (gate_frame); the sound plays on the way.""",
+    0x3ba5: 'Gate sound (voice 3 noise): C = 1 high, C = 0 low',
     0x3bd5: """Mark the floor under the ball: every floor character ($20 or $B3) the
 ball covers becomes $63, and its address goes into the mark list at
 $7800/$7900 (mark_count entries). At the end of the level the marks are
@@ -119,7 +119,7 @@ colour buffer ($7850-$7BFF) to colour RAM ($D850): everything but the
 top two status rows""",
     0x413d: 'Fill the colour buffer with the maze\'s floor colour',
     0x415d: 'Frame colour for the board frame cells',
-    0x419d: 'Colour the switch blocks (colour 15) in the colour buffer',
+    0x419d: 'Colour the gate (colour 15) in the colour buffer',
     0x41fc: """Prepare the next maze and slide it in from the right""",
     0x4263: """Slide the maze in, bouncing a few times (slide_bounce steps)""",
 }
@@ -136,3 +136,28 @@ COMMENTS = {
     0x3c6a: 'floor?',
     0x3c91: 'floor mark character',
 }
+
+BLOCK_COMMENTS.update({
+    0x38cf: """Draw the gates (the "gates" of the maze: bars across the corridors).
+Fire flips them open for a moment (fire_gates).
+C = 0: redraw the gates on the screen when gate_frame changed
+C = 1: take the gate mask for the level and maze, draw all of them into
+       the screen buffer at $7C00""",
+    0x3b2d: """Fire button: open the gates. Once per press: the gates flip open over
+5 steps (gate_frame 0-5), stay open for a while (shorter on higher
+levels: gate_anim_start), then close again by themselves.""",
+    0x2000: """Maze 0 screen (40 x 25 characters) as loaded. Saved to $A000 at
+start-up; after that $2000-$27FF is the character set, built at run time.
+In the mazes: $00 = wall top (multicolour %10/%11 pixels: foreground, so
+the ball sprite collides with it), $20 = floor (background), the edge
+characters around the walls are rebuilt for every tilt.""",
+})
+COMMENTS.update({
+    0x3b2d: 'fire released: allow the next press',
+    0x3b4a: 'new press: start the gate animation',
+    0x3b55: 'steps 1-10: opening (gate_frame 0-5)',
+    0x3b5e: 'step 11: open, gate sound',
+    0x3b6c: 'hold open until step gate_anim_start',
+    0x3b75: 'then close: gate_frame back to 0',
+    0x3b89: 'closed again: gate sound, done',
+})
