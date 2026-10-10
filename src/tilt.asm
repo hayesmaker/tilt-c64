@@ -182,8 +182,8 @@
 .label count_marks_delay              = $cf9a
 .label gate_mask                      = $cf9b   // bit mask: which of the 8 gate of the maze are on
 .label count_marks_on                 = $cf9c
-.label bumper_timer                   = $cf9d
-.label bumper_index                   = $cf9e
+.label special_cell_timer             = $cf9d
+.label special_cell_index             = $cf9e
 .label bonus_left                     = $cfa0
 .label shaking                        = $cfa1   // board is shaking (higher clunk sound)
 .label ball_size                      = $cfa2
@@ -3294,8 +3294,9 @@ L3966:
     rts                                         // $3978
 
 // ----------------------------------------------------------------------------
-// Gate masks: 4 masks per level (one per maze), levels 1-5
-// (level 5 and up use the last row)
+// Gate ("trap") layout: 4 masks per level, one per maze. Each loop through
+// the four mazes uses the next row, so the same mazes come back with
+// different gates (levels 1-5; level 5 and up use the last row).
 // ----------------------------------------------------------------------------
 gate_masks_by_level:
     .byte $ff,$ff,$ff,$ff,$fe,$fe,$ef,$fb,$de,$de,$ed,$bb,$d6,$dc,$cd,$3b  // $3979
@@ -4856,7 +4857,7 @@ L45b0:
     stx speed_class                             // $45b0
     lda tilt_rates,x                            // $45b3
     sta tilt_rate                               // $45b6
-    lda level                                   // $45b9  ball size = level index - 3, limited to 1-6: the ball grows from level 6 on
+    lda level                                   // $45b9  ball size = level index - 3, limited to 1-6 (grows slowly: hardly visible before level 4-5)
     sec                                         // $45bc
     sbc #$03                                    // $45bd
     bcc L45c5                                   // $45bf
@@ -4955,7 +4956,8 @@ L4671:
 
 // ----------------------------------------------------------------------------
 // The ball is in the exit hole: drop it in, shake the board, count the
-// bonus, then slide to the next maze (after maze 3: next level)
+// bonus (x2), then slide to the next maze. After maze 3 the level goes up:
+// the four mazes repeat with a bigger ball and new gate masks.
 // ----------------------------------------------------------------------------
 level_done:
     lda demo_mode                               // $4678
@@ -5099,8 +5101,9 @@ L47a4:
     rts                                         // $47a4
 
 // ----------------------------------------------------------------------------
-// Count the floor marks back (count_marks, IRQ) for bonus points and
-// power, until all counters are done
+// End of a maze: count the floor marks back (count_marks, IRQ) into power
+// and bonus points. Everything counts double when the maze was finished
+// (ball in the exit hole) rather than the ball being lost.
 // ----------------------------------------------------------------------------
 level_bonus:
     jsr set_bonus_glyph                         // $47a5
@@ -8670,8 +8673,8 @@ L62d9:
 L62e1:
     jsr slide_scroll                            // $62e1  maze slide
     jsr count_marks                             // $62e4  end of level: count the marks
-    jsr gate_hit_anim                           // $62e7  gate / bumper animations
-    jsr bumper_hit_anim                         // $62ea
+    jsr gate_hit_anim                           // $62e7  gate / special cell animations
+    jsr special_cell_anim                       // $62ea
     jsr two_tone_sound                          // $62ed  two-tone sound
     lda level_sign_on                           // $62f0
     bne L6318                                   // $62f3
@@ -9498,9 +9501,10 @@ D69dd:
     .byte $00,$00,$00,$40,$50,$54,$55,$55,$55   // $69dd
 
 // ----------------------------------------------------------------------------
-// End of level, in the IRQ: take the floor marks off one by one; each
-// gives power. A mark that is no longer a mark character (a gate
-// was drawn over it, or cells $FB / $FE) scores that block instead.
+// End of a maze, in the IRQ: take the floor marks off one by one; each
+// gives power (+$12, or +$28 when the maze was finished). A mark that is
+// no longer a mark character (a gate was drawn over it, or the special
+// cells $FB / $FE) scores that object instead.
 // ----------------------------------------------------------------------------
 count_marks:
     lda count_marks_on                          // $69e6
@@ -9569,7 +9573,7 @@ L6a65:
     rts                                         // $6a65
 
 // ----------------------------------------------------------------------------
-// A mark that is no longer a floor mark: $FB/$FE = bumper, $00/$29/$25 = part of a gate
+// A mark that is no longer a floor mark: $FB/$FE = special cell, $00/$29/$25 = part of a gate
 // ----------------------------------------------------------------------------
 unmark_special:
     cmp #$fb                                    // $6a66
@@ -9577,7 +9581,7 @@ unmark_special:
     cmp #$fe                                    // $6a6a
     bne L6a74                                   // $6a6c
 L6a6e:
-    jsr bumper_hit                              // $6a6e
+    jsr special_cell_hit                        // $6a6e
     jmp L6a8f                                   // $6a71
 L6a74:
     cmp #$00                                    // $6a74
@@ -9599,7 +9603,9 @@ L6a8f:
     rts                                         // $6a8f
 
 // ----------------------------------------------------------------------------
-// Bonus count: points and sound while bonus_left counts down; flashes the status marks
+// Bonus count: while bonus_left counts down, add 50 points per step, or
+// 100 (x2) when the ball went into the exit hole; sound, flashes the
+// status marks
 // ----------------------------------------------------------------------------
 bonus_count_sound:
     lda bonus_sound_on                          // $6a90
@@ -9762,24 +9768,25 @@ gate_hit_sound:
     rts                                         // $6ba6
 
 // ----------------------------------------------------------------------------
-// A bumper ($FB / $FE cell) was hit: animate it and add bonus
+// A special cell ($FB / $FE) was found under a mark: animate it and add
+// to the bonus. (Not confirmed what this is in the game.)
 // ----------------------------------------------------------------------------
-bumper_hit:
+special_cell_hit:
     lda #$29                                    // $6ba7
     jsr find_gate                               // $6ba9
     bcs L6c07                                   // $6bac
     lda zp_fa                                   // $6bae
-    ldx bumper_timer                            // $6bb0
+    ldx special_cell_timer                      // $6bb0
     beq L6bbf                                   // $6bb3
     pha                                         // $6bb5
     lda #$01                                    // $6bb6
-    sta bumper_timer                            // $6bb8
-    jsr bumper_hit_anim                         // $6bbb
+    sta special_cell_timer                      // $6bb8
+    jsr special_cell_anim                       // $6bbb
     pla                                         // $6bbe
 L6bbf:
-    sta bumper_index                            // $6bbf
+    sta special_cell_index                      // $6bbf
     lda #$10                                    // $6bc2
-    sta bumper_timer                            // $6bc4
+    sta special_cell_timer                      // $6bc4
     lda #$00                                    // $6bc7
     sta SID_V2_CTRL                             // $6bc9
     sta SID_V2_AD                               // $6bcc
@@ -9876,14 +9883,14 @@ gate_hit_anim_sound:
     rts                                         // $6c7c
 
 // ----------------------------------------------------------------------------
-// Animate a hit bumper (pulse sound), then add to the bonus
+// Animate a special cell (pulse sound), then add to the bonus
 // ----------------------------------------------------------------------------
-bumper_hit_anim:
-    lda bumper_timer                            // $6c7d
+special_cell_anim:
+    lda special_cell_timer                      // $6c7d
     bne L6c85                                   // $6c80
     jmp L6cf5                                   // $6c82
 L6c85:
-    dec bumper_timer                            // $6c85
+    dec special_cell_timer                      // $6c85
     bne L6c9a                                   // $6c88
     lda #$05                                    // $6c8a
     ldx ball_in_hole                            // $6c8c
@@ -9894,7 +9901,7 @@ L6c93:
     adc bonus_left                              // $6c94
     lda bonus_left                              // $6c97
 L6c9a:
-    ldx bumper_index                            // $6c9a
+    ldx special_cell_index                      // $6c9a
     lda gate_table,x                            // $6c9d
     sta zp_fb                                   // $6ca0
     inx                                         // $6ca2
@@ -9903,7 +9910,7 @@ L6c9a:
     inx                                         // $6ca8
     ldy gate_table,x                            // $6ca9
     sty zp_fa                                   // $6cac
-    lda bumper_timer                            // $6cae
+    lda special_cell_timer                      // $6cae
     bne L6cbc                                   // $6cb1
     iny                                         // $6cb3
     iny                                         // $6cb4
@@ -11227,7 +11234,7 @@ status_glyphs_2620:
     .byte %10000000                             // $74fa  #.......
 
 // ----------------------------------------------------------------------------
-// Bonus: A = power to add (doubled if the ball went into the hole)
+// Bonus: A = power to add, x2 if the ball went into the hole
 // ----------------------------------------------------------------------------
 bonus_power:
     ldx game_over                               // $74fb

@@ -67,15 +67,18 @@ game image into the banks, so a changed `src/tilt.asm` goes straight into
   ball sprite touches a wall (VIC sprite-background collision of sprite 3) the
   ball is lost. Sprites 0-4 make up the ball (shading, shine, ball, shadow).
 * **Gates.** Each maze has up to 8 gates across its corridors (`gate_table`,
-  enabled per level by `gate_masks_by_level`). Fire flips them open for a
-  short time (`fire_gates`); a closed gate is a wall.
+  enabled per level by `gate_masks_by_level`, so each loop through the mazes
+  has a different "trap" layout). Fire flips them open for a short time
+  (`fire_gates`); a closed gate is a wall.
 * **Exit hole.** Sprites 6 and 7. When the ball is over it (`ball_over_hole`)
-  it drops in and the next maze slides in. After the fourth maze the level
-  goes up: faster ball, faster tilting, bigger ball (from level 6).
+  it drops in and the next maze slides in. One level is mazes 0-3; then the
+  level goes up and the four mazes repeat with a faster ball, faster tilting,
+  new gate masks and a slightly bigger ball (hardly visible before level 4-5).
 * **Power.** The POWER bar is the ball's energy. Every tilt "clunk" costs
   power; when it runs out you get the BACKUP power, and losing a ball on
   BACKUP ends the game. The floor under the ball is marked as it rolls; at the
-  end of a maze the marks are counted back into power and bonus points.
+  end of a maze the marks are counted back into power and bonus points, x2
+  when the maze was finished rather than the ball lost.
 * **Timing.** Almost everything runs in the raster interrupt (`irq_handler`,
   12 raster lines per frame); the main program mostly waits for frames.
 * **Controls.** Joystick in port 2, or the keys (one "diamond" per hand):
