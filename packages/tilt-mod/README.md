@@ -52,18 +52,47 @@ Changes to the original code (all the same size, marked `tilt-mod:` in
 | `$4309` | `lda slide_state` (`slide_tick`) | `jsr skip_poll_slide` |
 | `$46E8` | `jsr level_sign_slide_out` | `jsr skip_sign_out` |
 | `$6013` | `jmp KERNAL_IRQ_EXIT` (after a colour split) | `jmp ingame_music_irq`: in-game music |
+| `$562A` | `jsr title_music_key` | `jsr mod_title_keys`: + F2/F3/F4 sound mode, mode sprite |
+| `$566D` | `jsr sid_off` (title ends) | `jsr mod_title_exit`: sprite 7 back as the title had it |
+| `$0340-$03FF` | zero (cassette buffer) | the mode sprite's three frames |
+| 44 SID stores in the sound effects | `sta/stx/sty SID_...` | `jsr sfx_<op>_<register>`: skipped while MUSIC plays (`src/sfx_mute.asm`) |
 
-### In-game music
+### Sound modes and in-game music
 
-While the ball is rolling, tilt-mod plays tune 5 (`src/ingame_music.asm`),
-a tune the original never plays: tune 2's melody alone on SID voice 1, the
-voice the sound effects leave free (see `../../docs/music.md`). It follows
-the music switch (M on the title screen). It runs in the raster IRQ after the
-line-105 colour split (done by line ~119; the next split is at 199), with the
-driver's voice loop limited to voice 1, so the rolling, clunk and gate sounds
-are untouched. It pauses while voice 1 is needed elsewhere: the BACKUP alarm,
-the power refill tone, the level jingle. Between mazes the tune carries on
-where it was; after the level jingle it starts again.
+On the title screen F2 / F3 / F4 pick the sound during play (F2 and F4 are
+SHIFT+F1 and SHIFT+F3 on a C64). A sprite under the logo, on the left, shows
+the current mode: its key and a glyph (speaker / note and speaker / notes).
+It is sprite 7, which the title doesn't use; its frames are in the cassette
+buffer (`$0340-$03FF`), and sprite 7's registers are given back when the title
+ends. The mode stays set from game to game.
+
+| Key | Mode | While the ball rolls |
+|-----|------|----------------------|
+| F2 | SFX ONLY | sound effects only, as in the original |
+| F3 | MUSIC + SFX (default) | tune 5 on SID voice 1, the effects on voices 2 and 3 |
+| F4 | MUSIC | tune 2 on all three voices; no sound effects while it plays |
+
+M still switches the title music and the level jingle on and off, as in the
+original; the sound mode doesn't depend on it.
+
+Tunes 2 and 5 are never played by the original (see `../../docs/music.md`):
+tune 2 is a full three-voice tune, tune 5 its melody alone on voice 1, the
+voice the sound effects leave free. The music (`src/ingame_music.asm`) runs in
+the raster IRQ after the line-105 colour split (done by line ~144; the next
+split is at 199) and only while the ball rolls.
+
+* **MUSIC + SFX:** the driver's voice loop is limited to voice 1, so the
+  rolling, clunk and gate sounds are untouched. It pauses while voice 1 is
+  needed elsewhere: the BACKUP alarm, the power refill tone, the level jingle.
+* **MUSIC:** tune 2 starts like the title music (SID cleared, volume 7, no
+  filter). While it plays the 44 SID stores of the sound effect routines
+  (`src/sfx_mute.asm`) do nothing; the routines still run, so the game plays
+  exactly the same (checked in the emulator). When the ball stops rolling the
+  voices are silenced and the game's filter and volume set again, so the
+  effects between mazes and when a ball is lost sound as usual.
+
+Between mazes the tune carries on where it was; after the level jingle it
+starts again.
 
 ### Fire skips the interstitial
 

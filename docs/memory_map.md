@@ -9,7 +9,7 @@ I/O and KERNAL on (the game uses the KERNAL IRQ entry/exit).
 | Address | Contents |
 |---------|----------|
 | `$00F8-$00FF` | zero page temporaries (`zp_f8`..`zp_ff`), saved by the raster IRQ |
-| `$0334-$03FF` | cassette buffer: leftovers |
+| `$0334-$03FF` | cassette buffer: leftovers (zero, not used; tilt-mod keeps its title sprite frames at `$0340-$03FF`) |
 | `$0400-$07E7` | screen. Rows 0-1: status line (SCORE, POWER, LEVEL, HI); rows 2-24: the board |
 | `$07F8-$07FF` | sprite pointers |
 | `$0424-$0467` | (at start-up) the original disk loader, typed into screen RAM; the cartridge enters at `$0460` |

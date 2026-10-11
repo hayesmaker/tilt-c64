@@ -305,20 +305,79 @@
 // Cassette buffer area: leftovers, partly used as a work buffer
 // ============================================================================
 * = $0334 "tape_buffer"
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0334
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0344
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0354
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0364
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0374
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0384
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $0394
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $03a4
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $03b4
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $03c4
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $03d4
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $03e4
-    .byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00  // $03f4
-
+    .fill $0340 - $0334, 0                     // leftovers (zero)
+// tilt-mod: the title screen's sound mode sprite (sprite 7, pointers 13-15),
+// see ingame_music.asm. The cassette buffer is not used by the game.
+options_sprites:
+// frame 0, F2: SOUND FX (speaker)
+    .byte %00000111,%11100011,%11000000
+    .byte %00000110,%00000110,%01100000
+    .byte %00000110,%00000000,%01100000
+    .byte %00000111,%10000000,%11000000
+    .byte %00000110,%00000011,%00000000
+    .byte %00000110,%00000110,%00000000
+    .byte %00000110,%00000111,%11100000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000010,%00010000,%10000000
+    .byte %00000110,%00001000,%01000000
+    .byte %00001110,%01000100,%00100000
+    .byte %11111110,%00100010,%00100000
+    .byte %11111110,%00100010,%00010000
+    .byte %11111110,%00100010,%00010000
+    .byte %11111110,%00100010,%00100000
+    .byte %00001110,%01000100,%00100000
+    .byte %00000110,%00001000,%01000000
+    .byte %00000010,%00010000,%10000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte 0
+// frame 1, F3: MUSIC AND FX (note, speaker)
+    .byte %00000111,%11100011,%11000000
+    .byte %00000110,%00000110,%01100000
+    .byte %00000110,%00000000,%01100000
+    .byte %00000111,%10000001,%11000000
+    .byte %00000110,%00000000,%01100000
+    .byte %00000110,%00000110,%01100000
+    .byte %00000110,%00000011,%11000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00010000,%00000000,%00100000
+    .byte %00011000,%00000010,%00010000
+    .byte %00010100,%00000110,%00001000
+    .byte %00010010,%00011110,%01001000
+    .byte %00010000,%00011110,%00100100
+    .byte %00010000,%00011110,%00100100
+    .byte %01110000,%00011110,%01001000
+    .byte %11110000,%00000110,%00001000
+    .byte %11110000,%00000010,%00010000
+    .byte %01100000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte 0
+// frame 2, F4: MUSIC (notes)
+    .byte %00000111,%11100000,%01100000
+    .byte %00000110,%00000000,%11100000
+    .byte %00000110,%00000001,%11100000
+    .byte %00000111,%10000110,%01100000
+    .byte %00000110,%00000111,%11110000
+    .byte %00000110,%00000000,%01100000
+    .byte %00000110,%00000000,%01100000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000111,%11111111,%11000000
+    .byte %00000111,%11111111,%11000000
+    .byte %00000100,%00000000,%01000000
+    .byte %00000100,%00000000,%01000000
+    .byte %00000100,%00000000,%01000000
+    .byte %00000100,%00000000,%01000000
+    .byte %00111100,%00000011,%11000000
+    .byte %01111100,%00000111,%11000000
+    .byte %01111100,%00000111,%11000000
+    .byte %00111000,%00000011,%10000000
+    .byte %00000000,%00000000,%00000000
+    .byte %00000000,%00000000,%00000000
+    .byte 0
 // ============================================================================
 // screen  ($0400-$07ff)
 // Screen RAM ($0400-$07E7) and sprite pointers ($07F8-$07FF).
@@ -2198,11 +2257,11 @@ L154a:
 // ----------------------------------------------------------------------------
 roll_sound:
     ldx #$1f                                    // $1596
-    stx SID_MODE_VOL                            // $1598
+    jsr sfx_stx_mode_vol                        // $1598  tilt-mod: was "stx SID_MODE_VOL" (muted while MUSIC plays)
     lda #$00                                    // $159b
-    sta SID_V3_FREQ_LO                          // $159d
+    jsr sfx_sta_v3_freq_lo                      // $159d  tilt-mod: was "sta SID_V3_FREQ_LO" (muted while MUSIC plays)
     lda #$08                                    // $15a0
-    sta SID_V3_FREQ_HI                          // $15a2
+    jsr sfx_sta_v3_freq_hi                      // $15a2  tilt-mod: was "sta SID_V3_FREQ_HI" (muted while MUSIC plays)
     lda ball_vx                                 // $15a5
     bpl L15af                                   // $15a8
     eor #$ff                                    // $15aa
@@ -2235,15 +2294,15 @@ L15d0:
     asl                                         // $15d4
     asl                                         // $15d5
     asl                                         // $15d6
-    sta SID_V3_SR                               // $15d7
+    jsr sfx_sta_v3_sr                           // $15d7  tilt-mod: was "sta SID_V3_SR" (muted while MUSIC plays)
     lda roll_volume_old                         // $15da
     cmp roll_volume                             // $15dd
     bcs L15e7                                   // $15e0
     lda #$80                                    // $15e2
-    sta SID_V3_CTRL                             // $15e4
+    jsr sfx_sta_v3_ctrl                         // $15e4  tilt-mod: was "sta SID_V3_CTRL" (muted while MUSIC plays)
 L15e7:
     lda #$81                                    // $15e7
-    sta SID_V3_CTRL                             // $15e9
+    jsr sfx_sta_v3_ctrl                         // $15e9  tilt-mod: was "sta SID_V3_CTRL" (muted while MUSIC plays)
     lda roll_volume                             // $15ec
     sta roll_volume_old                         // $15ef
     ldy #$ff                                    // $15f2
@@ -2291,7 +2350,7 @@ L163e:
     lsr zp_fc                                   // $163e
     clc                                         // $1640
     adc zp_fc                                   // $1641
-    sta SID_FC_HI                               // $1643
+    jsr sfx_sta_fc_hi                           // $1643  tilt-mod: was "sta SID_FC_HI" (muted while MUSIC plays)
     rts                                         // $1646
 
 // ----------------------------------------------------------------------------
@@ -2813,13 +2872,13 @@ L19cd:
     lda #$01                                    // $19cd
     sta clunk_state                             // $19cf
     lda #$10                                    // $19d2
-    sta SID_V2_CTRL                             // $19d4
+    jsr sfx_sta_v2_ctrl                         // $19d4  tilt-mod: was "sta SID_V2_CTRL" (muted while MUSIC plays)
     lda #$e0                                    // $19d7
-    sta SID_V2_SR                               // $19d9
+    jsr sfx_sta_v2_sr                           // $19d9  tilt-mod: was "sta SID_V2_SR" (muted while MUSIC plays)
     lda #$00                                    // $19dc
-    sta SID_V2_AD                               // $19de
+    jsr sfx_sta_v2_ad                           // $19de  tilt-mod: was "sta SID_V2_AD" (muted while MUSIC plays)
     lda #$11                                    // $19e1
-    sta SID_V2_CTRL                             // $19e3
+    jsr sfx_sta_v2_ctrl                         // $19e3  tilt-mod: was "sta SID_V2_CTRL" (muted while MUSIC plays)
 L19e6:
     lda tilt_dx                                 // $19e6
     sta sound_tilt_dx                           // $19e9
@@ -2886,8 +2945,8 @@ L1a52:
     cpx #$90                                    // $1a5c
     bcc L1a68                                   // $1a5e
     ldx #$00                                    // $1a60
-    stx SID_V2_FREQ_HI                          // $1a62
-    stx SID_V2_FREQ_LO                          // $1a65
+    jsr sfx_stx_v2_freq_hi                      // $1a62  tilt-mod: was "stx SID_V2_FREQ_HI" (muted while MUSIC plays)
+    jsr sfx_stx_v2_freq_lo                      // $1a65  tilt-mod: was "stx SID_V2_FREQ_LO" (muted while MUSIC plays)
 L1a68:
     stx clunk_state                             // $1a68
 L1a6b:
@@ -2906,9 +2965,9 @@ tilt_sound_freq:
     clc                                         // $1a78
     adc #$02                                    // $1a79
 L1a7b:
-    sta SID_V2_FREQ_HI                          // $1a7b
+    jsr sfx_sta_v2_freq_hi                      // $1a7b  tilt-mod: was "sta SID_V2_FREQ_HI" (muted while MUSIC plays)
     ldy #$00                                    // $1a7e
-    sty SID_V2_FREQ_LO                          // $1a80
+    jsr sfx_sty_v2_freq_lo                      // $1a80  tilt-mod: was "sty SID_V2_FREQ_LO" (muted while MUSIC plays)
     rts                                         // $1a83
 
 // ----------------------------------------------------------------------------
@@ -3445,22 +3504,22 @@ gate_sound:
     bcc L3bab                                   // $3ba7
     lda #$ff                                    // $3ba9
 L3bab:
-    sta SID_V3_FREQ_HI                          // $3bab
+    jsr sfx_sta_v3_freq_hi                      // $3bab  tilt-mod: was "sta SID_V3_FREQ_HI" (muted while MUSIC plays)
     lda #$80                                    // $3bae
-    sta SID_V3_CTRL                             // $3bb0
+    jsr sfx_sta_v3_ctrl                         // $3bb0  tilt-mod: was "sta SID_V3_CTRL" (muted while MUSIC plays)
     lda #$00                                    // $3bb3
-    sta SID_V3_FREQ_LO                          // $3bb5
-    sta SID_V3_AD                               // $3bb8
+    jsr sfx_sta_v3_freq_lo                      // $3bb5  tilt-mod: was "sta SID_V3_FREQ_LO" (muted while MUSIC plays)
+    jsr sfx_sta_v3_ad                           // $3bb8  tilt-mod: was "sta SID_V3_AD" (muted while MUSIC plays)
     lda #$f0                                    // $3bbb
-    sta SID_V3_SR                               // $3bbd
+    jsr sfx_sta_v3_sr                           // $3bbd  tilt-mod: was "sta SID_V3_SR" (muted while MUSIC plays)
     lda #$0f                                    // $3bc0
     sta roll_volume_old                         // $3bc2
     lda #$2f                                    // $3bc5
-    sta SID_MODE_VOL                            // $3bc7
+    jsr sfx_sta_mode_vol                        // $3bc7  tilt-mod: was "sta SID_MODE_VOL" (muted while MUSIC plays)
     lda #$6e                                    // $3bca
-    sta SID_FC_HI                               // $3bcc
+    jsr sfx_sta_fc_hi                           // $3bcc  tilt-mod: was "sta SID_FC_HI" (muted while MUSIC plays)
     lda #$81                                    // $3bcf
-    sta SID_V3_CTRL                             // $3bd1
+    jsr sfx_sta_v3_ctrl                         // $3bd1  tilt-mod: was "sta SID_V3_CTRL" (muted while MUSIC plays)
     rts                                         // $3bd4
 
 // ----------------------------------------------------------------------------
@@ -7201,7 +7260,7 @@ title_loop_frame:
     lda #$01                                    // $5622
     jsr wait_frames                             // $5624
     jsr draw_logo                               // $5627
-    jsr title_music_key                         // $562a
+    jsr mod_title_keys                          // $562a  tilt-mod: was "jsr title_music_key": + F1/F3/F5 sound mode
     jsr title_scroll_text                       // $562d
     lda #$18                                    // $5630
     sta screen_on                               // $5632
@@ -7231,7 +7290,7 @@ L5648:
 title_start_demo:
     jsr start_demo                              // $566a
 title_done:
-    jsr sid_off                                 // $566d
+    jsr mod_title_exit                          // $566d  tilt-mod: was "jsr sid_off": sound mode sprite off, then sid_off
     lda #$00                                    // $5670
     sta no_restart                              // $5672
     lda #$08                                    // $5675
@@ -9249,22 +9308,22 @@ shine_off_sound:
     lda #$00                                    // $67b0
     sta shine_state                             // $67b2
     lda #$0f                                    // $67b5
-    sta SID_V3_FREQ_HI                          // $67b7
+    jsr sfx_sta_v3_freq_hi                      // $67b7  tilt-mod: was "sta SID_V3_FREQ_HI" (muted while MUSIC plays)
     lda #$80                                    // $67ba
-    sta SID_V3_CTRL                             // $67bc
+    jsr sfx_sta_v3_ctrl                         // $67bc  tilt-mod: was "sta SID_V3_CTRL" (muted while MUSIC plays)
     lda #$00                                    // $67bf
-    sta SID_V3_FREQ_LO                          // $67c1
-    sta SID_V3_AD                               // $67c4
+    jsr sfx_sta_v3_freq_lo                      // $67c1  tilt-mod: was "sta SID_V3_FREQ_LO" (muted while MUSIC plays)
+    jsr sfx_sta_v3_ad                           // $67c4  tilt-mod: was "sta SID_V3_AD" (muted while MUSIC plays)
     lda #$40                                    // $67c7
-    sta SID_V3_SR                               // $67c9
+    jsr sfx_sta_v3_sr                           // $67c9  tilt-mod: was "sta SID_V3_SR" (muted while MUSIC plays)
     lda #$04                                    // $67cc
     sta roll_volume_old                         // $67ce
     lda #$3f                                    // $67d1
-    sta SID_MODE_VOL                            // $67d3
+    jsr sfx_sta_mode_vol                        // $67d3  tilt-mod: was "sta SID_MODE_VOL" (muted while MUSIC plays)
     lda #$6e                                    // $67d6
-    sta SID_FC_HI                               // $67d8
+    jsr sfx_sta_fc_hi                           // $67d8  tilt-mod: was "sta SID_FC_HI" (muted while MUSIC plays)
     lda #$81                                    // $67db
-    sta SID_V3_CTRL                             // $67dd
+    jsr sfx_sta_v3_ctrl                         // $67dd  tilt-mod: was "sta SID_V3_CTRL" (muted while MUSIC plays)
     rts                                         // $67e0
 
 // ----------------------------------------------------------------------------
@@ -10978,14 +11037,14 @@ drain_power:
     lda #$00                                    // $73ad
     sta power_drain_on                          // $73af
     lda #$00                                    // $73b2
-    sta SID_V1_CTRL                             // $73b4
-    sta SID_V1_FREQ_LO                          // $73b7
-    sta SID_V1_FREQ_HI                          // $73ba
-    sta SID_V1_AD                               // $73bd
+    jsr sfx_sta_v1_ctrl                         // $73b4  tilt-mod: was "sta SID_V1_CTRL" (muted while MUSIC plays)
+    jsr sfx_sta_v1_freq_lo                      // $73b7  tilt-mod: was "sta SID_V1_FREQ_LO" (muted while MUSIC plays)
+    jsr sfx_sta_v1_freq_hi                      // $73ba  tilt-mod: was "sta SID_V1_FREQ_HI" (muted while MUSIC plays)
+    jsr sfx_sta_v1_ad                           // $73bd  tilt-mod: was "sta SID_V1_AD" (muted while MUSIC plays)
     lda #$30                                    // $73c0
-    sta SID_V1_SR                               // $73c2
+    jsr sfx_sta_v1_sr                           // $73c2  tilt-mod: was "sta SID_V1_SR" (muted while MUSIC plays)
     lda #$21                                    // $73c5
-    sta SID_V1_CTRL                             // $73c7
+    jsr sfx_sta_v1_ctrl                         // $73c7  tilt-mod: was "sta SID_V1_CTRL" (muted while MUSIC plays)
 L73ca:
     rts                                         // $73ca
 
@@ -11107,7 +11166,7 @@ L7464:
     inc backup_alarm_freq                       // $746c
 L746f:
     lda backup_alarm_freq                       // $746f
-    sta SID_V1_FREQ_HI                          // $7472
+    jsr sfx_sta_v1_freq_hi                      // $7472  tilt-mod: was "sta SID_V1_FREQ_HI" (muted while MUSIC plays)
 L7475:
     rts                                         // $7475
 D7476:
@@ -11345,19 +11404,19 @@ diagonal_sound:
     cpx #$02                                    // $756f
     bne L7582                                   // $7571
     lda #$46                                    // $7573
-    sta SID_V2_FREQ_HI                          // $7575
+    jsr sfx_sta_v2_freq_hi                      // $7575  tilt-mod: was "sta SID_V2_FREQ_HI" (muted while MUSIC plays)
     lda #$00                                    // $7578
-    sta SID_V2_FREQ_LO                          // $757a
+    jsr sfx_sta_v2_freq_lo                      // $757a  tilt-mod: was "sta SID_V2_FREQ_LO" (muted while MUSIC plays)
     lda #$21                                    // $757d
-    sta SID_V2_CTRL                             // $757f
+    jsr sfx_sta_v2_ctrl                         // $757f  tilt-mod: was "sta SID_V2_CTRL" (muted while MUSIC plays)
 L7582:
     cpx #$01                                    // $7582
     bne L7593                                   // $7584
     lda #$11                                    // $7586
-    sta SID_V2_CTRL                             // $7588
+    jsr sfx_sta_v2_ctrl                         // $7588  tilt-mod: was "sta SID_V2_CTRL" (muted while MUSIC plays)
     lda #$00                                    // $758b
-    sta SID_V2_FREQ_LO                          // $758d
-    sta SID_V2_FREQ_HI                          // $7590
+    jsr sfx_sta_v2_freq_lo                      // $758d  tilt-mod: was "sta SID_V2_FREQ_LO" (muted while MUSIC plays)
+    jsr sfx_sta_v2_freq_hi                      // $7590  tilt-mod: was "sta SID_V2_FREQ_HI" (muted while MUSIC plays)
 L7593:
     rts                                         // $7593
 
@@ -11653,6 +11712,7 @@ maze_screens:
     #import "gates16.asm"
     #import "skip.asm"
     #import "ingame_music.asm"
+    #import "sfx_mute.asm"
     .assert "tilt-mod code fits below $CE00", * <= $ce00, true
 
 // ============================================================================

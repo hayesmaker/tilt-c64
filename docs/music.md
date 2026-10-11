@@ -17,10 +17,10 @@ game writes a tune number to `music_command` (`$8000`) and calls `music_play`
 | Tune | Voice 1 sequence | Used by the game | Notes |
 |------|------------------|------------------|-------|
 | 1 | `$883B` | title music: started by `title_music_key` (`$5F50`) when the logo rocks, if music is on (M) | loops; 3 voices |
-| 2 | `$88CF` | never played | a complete looping 3-voice tune; excellent, and a candidate for in-game music |
+| 2 | `$88CF` | never played (tilt-mod: MUSIC sound mode) | a complete looping 3-voice tune; excellent, and a candidate for in-game music |
 | 3 | `$88FE` | level-start jingle (`level_jingle`, `$5F61`), only if music is on; cut off after 128 frames | |
 | 4 | `$890A` | game-over jingle (`game_over_jingle`, `$5FA7`), but both branches skip it, so it is never heard | |
-| 5 | `$8C0A` | never played (tilt-mod plays it during a game) | one voice: tune 2's melody (pattern `$19`) alone on voice 1, voices 2 and 3 rest. Probably meant as in-game music: voice 1 is the one the sound effects leave free |
+| 5 | `$8C0A` | never played (tilt-mod: MUSIC + SFX sound mode) | one voice: tune 2's melody (pattern `$19`) alone on voice 1, voices 2 and 3 rest. Probably meant as in-game music: voice 1 is the one the sound effects leave free |
 
 A voice's sequence is a list of pattern numbers (`$00-$7F`); `$FF` jumps back
 to its start, and other bytes from `$80` set the transpose to the byte + `$40`
@@ -38,9 +38,11 @@ title screen plays that tune instead.
 
 ## Music during play
 
-The original plays no music during a game. tilt-mod does: tune 5 on voice 1
-(see `packages/tilt-mod/README.md`, "In-game music"). Measured in the
-emulator:
+The original plays no music during a game. tilt-mod has three sound modes
+(F2 / F3 / F4 on the title): effects only, tune 5 on voice 1 with the effects,
+or tune 2 on all voices with the effects muted while it plays (see
+`packages/tilt-mod/README.md`, "Sound modes and in-game music"). Measured in
+the emulator:
 
 * **Cost:** `music_play` takes about 870 cycles per call on average and
   2,000 at most (title tune).

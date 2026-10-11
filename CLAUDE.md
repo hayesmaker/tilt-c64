@@ -24,8 +24,10 @@
 * Code checksum $0980-$8DFF at start-up ($0827): changed code triggers the tamper glyph.
 * Docs: README.md, docs/memory_map.md, docs/music.md (tunes 1-5), docs/mazes/ (`python3 tools/mazeview.py`).
 * `packages/tilt-mod/src` is HAND-EDITED (copy of src/ with same-size patches marked
-  `tilt-mod:` + maze_loader.asm / gates16.asm / skip.asm / ingame_music.asm at $C000: 0-16 gates per
-  maze, fire skips the between-maze animation, tune 5 on voice 1 during play); regen.sh never touches it. Maze sets are JSON
+  `tilt-mod:` + maze_loader.asm / gates16.asm / skip.asm / ingame_music.asm / sfx_mute.asm at $C000:
+  0-16 gates per maze, fire skips the between-maze animation, F2/F3/F4 sound modes:
+  SFX / tune 5 on voice 1 + SFX / tune 2 with SFX muted, shown by title sprite 7 whose
+  frames are at $0340); regen.sh never touches it. Maze sets are JSON
   (tools/mazes.py); `python3 packages/tilt-mod/tools/test_mod.py set.json N` plays N mazes
   in the emulator. The loader can't live at $A000-$BFFF (BASIC ROM shows while a bank is read).
 * `packages/level-editor`: Vite/TS editor (`npm run dev`, port 5181, `npm test`).
