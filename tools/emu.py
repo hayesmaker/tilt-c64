@@ -106,6 +106,8 @@ class C64(CPU):
             if r == 0x1b: return random.randint(0, 255)
             if r == 0x1c: return 0
             return 0
+        if r < 0xc00:  # colour RAM: 4 bits
+            return self.io[r] & 0x0f
         if 0xc00 <= r < 0xd00:  # CIA1
             r &= 0xf
             if r == 0: return self.joy

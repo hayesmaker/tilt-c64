@@ -3194,8 +3194,8 @@ L38c2:
 //        the screen buffer at $7C00
 // ----------------------------------------------------------------------------
 draw_gates:
-    lda #$00                                    // $38cf
-    bcc L38d5                                   // $38d1
+    jmp mod_draw_gates                          // $38cf  tilt-mod: was "lda #$00 / bcc L38d5": 16 gates (gates16.asm)
+    nop
     lda #$78                                    // $38d3
 L38d5:
     sta gate_page_add                           // $38d5
@@ -3256,15 +3256,15 @@ L3938:
 // ----------------------------------------------------------------------------
 draw_gate:
     ldx gate_index                              // $3939
-    lda gate_table,x                            // $393c
+    lda gate_table16,x                          // $393c
     sta zp_fd                                   // $393f
     inx                                         // $3941
-    lda gate_table,x                            // $3942
+    lda gate_table16,x                          // $3942
     clc                                         // $3945
     adc gate_page_add                           // $3946
     sta zp_fe                                   // $3949
     inx                                         // $394b
-    lda gate_table,x                            // $394c
+    lda gate_table16,x                          // $394c
     ldy #$08                                    // $394f
     cmp #$02                                    // $3951
     bcc L3957                                   // $3953
@@ -3400,7 +3400,7 @@ L3b52:
 L3b5e:
     cmp #$0b                                    // $3b5e  step 11: open, gate sound
     bne L3b6c                                   // $3b60
-    ldx gate_mask                               // $3b62
+    jsr gate_mask_any                           // $3b62  tilt-mod: was "ldx gate_mask": 16 bit mask
     beq L3b6b                                   // $3b65
     sec                                         // $3b67
     jsr gate_sound                              // $3b68
@@ -3422,7 +3422,7 @@ L3b75:
     sta gate_frame                              // $3b83
     jmp L3b9a                                   // $3b86
 L3b89:
-    ldx gate_mask                               // $3b89  closed again: gate sound, done
+    jsr gate_mask_any                           // $3b89  tilt-mod: was "ldx gate_mask": 16 bit mask
     beq L3b92                                   // $3b8c
     clc                                         // $3b8e
     jsr gate_sound                              // $3b8f
@@ -4301,8 +4301,9 @@ maze_frame_colours:
 // Colour the gate (colour 15) in the colour buffer
 // ----------------------------------------------------------------------------
 colour_gates:
-    lda #$08                                    // $419d
-    sta gate_count                              // $419f
+    jmp mod_colour_gates                        // $419d  tilt-mod: was "lda #$08 / sta gate_count": 16 gates
+    nop
+    nop
     ldx maze                                    // $41a2
     lda maze_gate_index,x                       // $41a5
     sta gate_index                              // $41a8
@@ -4310,15 +4311,15 @@ colour_gates:
     sta gate_gfx_offset                         // $41ad
 L41b0:
     ldx gate_index                              // $41b0
-    lda gate_table,x                            // $41b3
+    lda gate_table16,x                          // $41b3
     sta zp_fd                                   // $41b6
     inx                                         // $41b8
-    lda gate_table,x                            // $41b9
+    lda gate_table16,x                          // $41b9
     clc                                         // $41bc
     adc #$74                                    // $41bd
     sta zp_fe                                   // $41bf
     inx                                         // $41c1
-    lda gate_table,x                            // $41c2
+    lda gate_table16,x                          // $41c2
     sta zp_fb                                   // $41c5
     asl                                         // $41c7
     clc                                         // $41c8
@@ -4483,7 +4484,7 @@ L42fb:
 // column (slide_state 2: right, 3: left) and draw the new column
 // ----------------------------------------------------------------------------
 slide_tick:
-    lda slide_state                             // $4309
+    jsr skip_poll_slide                         // $4309  tilt-mod: was "lda slide_state": fire skips the interstitial
     cmp #$02                                    // $430c
     bcc L433b                                   // $430e
     ldx #$06                                    // $4310
@@ -4938,7 +4939,7 @@ L4663:
 wait_frames:
     sta wait_counter                            // $4664
 L4667:
-    lda wait_counter                            // $4667
+    jsr skip_poll_wait                          // $4667  tilt-mod: was "lda wait_counter": fire skips the interstitial
     bne L4667                                   // $466a
     rts                                         // $466c
 
@@ -4980,7 +4981,7 @@ L4685:
     jsr wait_frames                             // $469f
     jmp L46eb                                   // $46a2
 L46a5:
-    jsr mod_next_maze                           // $46a5  tilt-mod: was "inc maze": load the next maze
+    jsr skip_arm                                // $46a5  tilt-mod: was "jsr mod_next_maze" (skip_arm calls it; skip.asm)
     jsr init_level_sign                         // $46a8
     jsr level_sign_slide_in                     // $46ab
     lda level_end                               // $46ae  tilt-mod: was "lda maze / cmp #4"
@@ -5008,7 +5009,7 @@ L46e3:
     lda two_tone_timer                          // $46e3
     bne L46e3                                   // $46e6
 L46e8:
-    jsr level_sign_slide_out                    // $46e8
+    jsr skip_sign_out                           // $46e8  tilt-mod: was "jsr level_sign_slide_out"
 L46eb:
     rts                                         // $46eb
 
@@ -8305,7 +8306,7 @@ L6004:
     txa                                         // $600d
     beq irq_top                                 // $600e
     jsr irq_split                               // $6010  steps 1-11: colour splits
-    jmp KERNAL_IRQ_EXIT                         // $6013
+    jmp ingame_music_irq                        // $6013  tilt-mod: was "jmp KERNAL_IRQ_EXIT": in-game music
 
 // ----------------------------------------------------------------------------
 // Step 0, top of the screen: frame counter for wait_frames, F1 = restart
@@ -9052,6 +9053,7 @@ L65e7:
     sta SID_V2_FREQ_HI                          // $65fe
     lda #$14                                    // $6601
     jsr wait_frames                             // $6603
+level_sign_hide:                                // tilt-mod: label (skip.asm)
     lda #$00                                    // $6606
     sta level_sign_on                           // $6608
     lda VIC_SPR_ENABLE                          // $660b
@@ -9269,7 +9271,7 @@ shine_off_sound:
 // Colour the gate that are off
 // ----------------------------------------------------------------------------
 draw_tilt_gates:
-    ldx maze                                    // $67e1
+    jmp mod_draw_tilt_gates                     // $67e1  tilt-mod: was "ldx maze": 16 gates
     lda maze_gate_index,x                       // $67e4
     sta zp_fb                                   // $67e7
     lda #$08                                    // $67e9
@@ -9280,16 +9282,16 @@ L67f2:
     ror zp_fa                                   // $67f2
     bcs L6826                                   // $67f4
     ldx zp_fb                                   // $67f6
-    lda gate_table,x                            // $67f8
+    lda gate_table16,x                          // $67f8
     sta zp_fd                                   // $67fb
     inx                                         // $67fd
-    lda gate_table,x                            // $67fe
+    lda gate_table16,x                          // $67fe
     clc                                         // $6801
     adc #$78                                    // $6802
     sta zp_fe                                   // $6804
     inx                                         // $6806
     ldy #$00                                    // $6807
-    lda gate_table,x                            // $6809
+    lda gate_table16,x                          // $6809
     beq L6810                                   // $680c
     ldy #$03                                    // $680e
 L6810:
@@ -9683,8 +9685,8 @@ L6b16:
 // zp_ff = its bit), C = 1 not found
 // ----------------------------------------------------------------------------
 find_gate:
-    sta zp_fa                                   // $6b17
-    lda zp_fd                                   // $6b19
+    jmp mod_find_gate                           // $6b17  tilt-mod: was "sta zp_fa / lda zp_fd": 16 gates
+    nop
     sec                                         // $6b1b
     sbc zp_fa                                   // $6b1c
     sta zp_fb                                   // $6b1e
@@ -9699,11 +9701,11 @@ find_gate:
     ldy #$08                                    // $6b32
 L6b34:
     ldx zp_fa                                   // $6b34
-    lda gate_table,x                            // $6b36
+    lda gate_table16,x                          // $6b36
     cmp zp_fb                                   // $6b39
     bne L6b45                                   // $6b3b
     inx                                         // $6b3d
-    lda gate_table,x                            // $6b3e
+    lda gate_table16,x                          // $6b3e
     cmp zp_fc                                   // $6b41
     beq L6b54                                   // $6b43
 L6b45:
@@ -9727,10 +9729,14 @@ L6b55:
 gate_hit:
     jsr find_gate                               // $6b56
     bcs L6b8b                                   // $6b59
-    lda zp_ff                                   // $6b5b
-    eor #$ff                                    // $6b5d
-    and gate_mask                               // $6b5f
-    sta gate_mask                               // $6b62
+    jsr mod_clear_gate_bit                      // $6b5b  tilt-mod: was "lda zp_ff / eor #$ff / and gate_mask / sta gate_mask"
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
+    nop
     lda zp_fa                                   // $6b65
     ldx gate_hit_timer                          // $6b67
     beq L6b7b                                   // $6b6a
@@ -9902,13 +9908,13 @@ L6c93:
     lda bonus_left                              // $6c97
 L6c9a:
     ldx tilt_gate_hit_index                      // $6c9a
-    lda gate_table,x                            // $6c9d
+    lda gate_table16,x                          // $6c9d
     sta zp_fb                                   // $6ca0
     inx                                         // $6ca2
-    lda gate_table,x                            // $6ca3
+    lda gate_table16,x                          // $6ca3
     sta zp_fc                                   // $6ca6
     inx                                         // $6ca8
-    ldy gate_table,x                            // $6ca9
+    ldy gate_table16,x                          // $6ca9
     sty zp_fa                                   // $6cac
     lda tilt_gate_hit_timer                      // $6cae
     bne L6cbc                                   // $6cb1
@@ -11644,6 +11650,9 @@ maze_screens:
     .fill $1000, 0                              // free: $B000-$BFFF (hidden by BASIC ROM while a cartridge bank is read)
 * = $c000 "tilt-mod"
     #import "maze_loader.asm"
+    #import "gates16.asm"
+    #import "skip.asm"
+    #import "ingame_music.asm"
     .assert "tilt-mod code fits below $CE00", * <= $ce00, true
 
 // ============================================================================

@@ -20,9 +20,10 @@ Maze set JSON:
       "floor_colour": 8-15, "frame_colour": 8-15,
                                         colour RAM values: 8-15 = multicolour characters,
                                         shown in colour value AND 7
-      "gates": [ {"col": c, "row": r, "orientation": 0-3} x 8 ],
+      "gates": [ {"col": c, "row": r, "orientation": 0-3} x 0-16 ],
       "gate_masks": ["10110111", ...]   5 rows (levels 1, 2, 3, 4, 5+), one bit per gate,
-                                        gate 8 ... gate 1 (left to right):
+                                        last gate ... gate 1 (left to right, up to 16
+                                        digits; bits for gates that don't exist are ignored):
                                         1 = fire gate (opened with fire),
                                         0 = tilt gate (opened by tilting against it)
   } ... ]
@@ -39,7 +40,8 @@ sys.path.insert(0, os.path.join(ROOT, 'tools'))
 MAX_BANKS = 16                    # 128K cartridge
 FIRST_SCREEN_BANK = 11
 MAX_MAZES = (MAX_BANKS - FIRST_SCREEN_BANK) * 8      # 40
-REC_SIZE = 64
+REC_SIZE = 128
+MAX_GATES = 16
 
 # tables in the original game image (see src/tilt.asm)
 SCREENS = (0x2000, 0x2400, 0x7800, 0x7c00)
@@ -92,8 +94,10 @@ def check(data):
         where = 'maze %d (%s)' % (i, z.get('name', ''))
         if len(z['screen']) != 25 or any(len(r) != 80 for r in z['screen']):
             raise SystemExit(where + ': screen must be 25 rows of 80 hex digits')
-        if len(z['gates']) != 8 or len(z['gate_masks']) != 5:
-            raise SystemExit(where + ': needs 8 gates and 5 gate masks')
+        if len(z['gates']) > MAX_GATES or len(z['gate_masks']) != 5:
+            raise SystemExit(where + ': needs 0-%d gates and 5 gate masks' % MAX_GATES)
+        if any(not 1 <= len(m) <= MAX_GATES or set(m) - set('01') for m in z['gate_masks']):
+            raise SystemExit(where + ': gate masks must be 1-%d binary digits' % MAX_GATES)
         for g in z['gates']:
             if not (0 <= g['col'] < 40 and 0 <= g['row'] < 25 and 0 <= g['orientation'] < 4):
                 raise SystemExit(where + ': bad gate %r' % g)
@@ -123,13 +127,17 @@ def build(src, outdir):
         rec[0], rec[1] = z['hole']
         rec[2], rec[3], rec[4] = z['start'][0] & 255, z['start'][0] >> 8, z['start'][1]
         rec[5], rec[6] = z['floor_colour'], z['frame_colour']
+        gates = z['gates']
         for r, mask in enumerate(z['gate_masks']):
-            rec[7 + r] = int(mask, 2)
-        for k, g in enumerate(z['gates']):
+            bits = int(mask, 2) & ((1 << len(gates)) - 1)
+            rec[7 + r], rec[38 + r] = bits & 255, bits >> 8
+        for k, g in enumerate(gates):
             a = 0x0400 + g['row'] * 40 + g['col']
-            rec[12 + k * 3:15 + k * 3] = bytes([a & 255, a >> 8, g['orientation']])
+            at = 12 + k * 3 if k < 8 else 44 + (k - 8) * 3
+            rec[at:at + 3] = bytes([a & 255, a >> 8, g['orientation']])
         rec[36] = FIRST_SCREEN_BANK + n // 8
         rec[37] = 0x80 + (n % 8) * 4
+        rec[43] = len(gates)
         directory[0x40 + n * REC_SIZE:0x40 + (n + 1) * REC_SIZE] = rec
     os.makedirs(outdir, exist_ok=True)
     open(os.path.join(outdir, 'maze_dir.bin'), 'wb').write(directory)

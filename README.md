@@ -85,6 +85,9 @@ game image into the banks, so a changed `src/tilt.asm` goes straight into
   `*` `;` `RETURN` `right SHIFT` or `Q/CTRL` `RUN/STOP` `A` `left SHIFT` for
   up / left / right / down, `SPACE` fire. On the title screen: fire = play,
   F7 = demo, M = music on/off. F1 restarts the game.
+* **Music.** A three-voice driver at `$8000` with five tunes: the title
+  music, the level-start jingle and three tunes the game never plays (see
+  [`docs/music.md`](docs/music.md)).
 * **Checksum.** The start-up code checks the sum of `$0980-$8DFF`. If it is
   wrong, a glyph of the status line font is replaced (see
   `docs/memory_map.md` before you change code).

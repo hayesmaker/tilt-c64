@@ -4,7 +4,7 @@
 import './style.css';
 import { inEdit, kindOf, retile, WALL, FLOOR } from './model/autotile';
 import { loadAssets, type Assets } from './model/assets';
-import { cellToSprite, cloneMaze, COLS, EDIT, fromJson, MAX_MAZES, ROWS, toJson, type Maze, type MazeSet } from './model/maze';
+import { cellToSprite, cloneMaze, COLS, EDIT, fromJson, MAX_GATES, MAX_MAZES, ROWS, toJson, type Maze, type MazeSet } from './model/maze';
 import { checkSet, gateSize, type Problem } from './model/validate';
 import { charImage, hexColour, renderMaze, type RenderOptions } from './editor/render';
 import { PlayerOverlay } from './editor/player';
@@ -139,7 +139,7 @@ function drawOverlay() {
   if (hover) {
     let [w, h] = [1, 1];
     if (tool === 'paste' && clip) [w, h] = [clip[0].length, clip.length];
-    if (tool === 'gate') w = h = gateSize(m.gates[gateSel].orientation);
+    if (tool === 'gate' && m.gates[gateSel]) w = h = gateSize(m.gates[gateSel].orientation);
     octx.strokeStyle = 'rgba(102,217,255,0.8)';
     octx.lineWidth = 1;
     octx.strokeRect(...cellRect(hover[0], hover[1], w, h));
@@ -191,6 +191,7 @@ function onDown(e: MouseEvent) {
     }));
     retile(m, c, r, c + clip[0].length - 1, r + clip.length - 1);
   } else if (tool === 'gate') {
+    if (!m.gates[gateSel]) return;
     m.gates[gateSel] = { ...m.gates[gateSel], col: c, row: r };
   } else if (tool === 'hole' || tool === 'start') {
     const [x, y] = cellToSprite(c, r);
@@ -238,9 +239,49 @@ function onUp() {
 }
 
 function rotateGate() {
-  snapshot();
   const g = maze().gates[gateSel];
+  if (!g) return;
+  snapshot();
   g.orientation = (g.orientation + 1) & 3;
+  changed();
+}
+
+/** New gate: a fire gate on every level, on the first 3x3 patch of floor that
+ *  no other gate covers (else the top left of the board). */
+function addGate() {
+  const m = maze();
+  if (m.gates.length >= MAX_GATES) return setStatus(`a maze has at most ${MAX_GATES} gates`);
+  const covered = (c: number, r: number) => m.gates.some((g) => {
+    const s = gateSize(g.orientation);
+    return c >= g.col && c < g.col + s && r >= g.row && r < g.row + s;
+  });
+  let at = { col: EDIT.left, row: EDIT.top };
+  search: for (let r = EDIT.top; r <= EDIT.bottom - 2; r++)
+    for (let c = EDIT.left; c <= EDIT.right - 2; c++) {
+      let ok = true;
+      for (let dr = 0; dr < 3 && ok; dr++)
+        for (let dc = 0; dc < 3 && ok; dc++)
+          ok = kindOf(m.screen[r + dr][c + dc]) === 'floor' && !covered(c + dc, r + dr);
+      if (ok) { at = { col: c, row: r }; break search; }
+    }
+  snapshot();
+  const k = m.gates.length;
+  m.gates.push({ ...at, orientation: 0 });
+  m.gate_masks = m.gate_masks.map((mask) => mask | (1 << k));
+  gateSel = k;
+  setTool('gate');
+  changed();
+}
+
+/** Remove the selected gate; the gates after it move down one number. */
+function removeGate() {
+  const m = maze();
+  const k = gateSel;
+  if (!m.gates[k]) return;
+  snapshot();
+  m.gates.splice(k, 1);
+  m.gate_masks = m.gate_masks.map((mask) => (mask & ((1 << k) - 1)) | ((mask >> (k + 1)) << k));
+  gateSel = Math.max(0, Math.min(k, m.gates.length - 1));
   changed();
 }
 
@@ -284,6 +325,10 @@ function refreshInspector() {
   $<HTMLInputElement>('#i-name').value = m.name;
   colourOptions($<HTMLSelectElement>('#i-floor'), m.floor_colour);
   colourOptions($<HTMLSelectElement>('#i-frame'), m.frame_colour);
+  gateSel = Math.max(0, Math.min(gateSel, m.gates.length - 1));
+  $('#g-count').textContent = `${m.gates.length} / ${MAX_GATES}`;
+  $<HTMLButtonElement>('#g-add').disabled = m.gates.length >= MAX_GATES;
+  $<HTMLButtonElement>('#g-del').disabled = !m.gates.length;
   const tb = $('#gates tbody');
   tb.innerHTML = '';
   m.gates.forEach((g, k) => {
@@ -428,6 +473,8 @@ function wire() {
     if (tool === 'gate') rotateGate();
   });
   document.querySelectorAll<HTMLButtonElement>('#tools [data-tool]').forEach((b) => (b.onclick = () => setTool(b.dataset.tool as Tool)));
+  $('#g-add').onclick = addGate;
+  $('#g-del').onclick = removeGate;
   $('#undo').onclick = () => { if (undoStack.length) { redoStack.push(JSON.stringify(set)); restore(undoStack.pop()!); } };
   $('#redo').onclick = () => { if (redoStack.length) { undoStack.push(JSON.stringify(set)); restore(redoStack.pop()!); } };
   $<HTMLCanvasElement>('#palette-canvas').onclick = (e) => {
@@ -518,7 +565,7 @@ function wire() {
     const keys: Record<string, Tool> = { w: 'wall', f: 'floor', c: 'char', i: 'pick', x: 'copy', v: 'paste', g: 'gate', h: 'hole', s: 'start' };
     if (keys[k]) setTool(keys[k]);
     else if (k === 'r') rotateGate();
-    else if (k >= '1' && k <= '8' && tool === 'gate') { gateSel = Number(k) - 1; refreshAll(); }
+    else if (k >= '1' && k <= '9' && tool === 'gate' && Number(k) <= maze().gates.length) { gateSel = Number(k) - 1; refreshAll(); }
   });
 }
 

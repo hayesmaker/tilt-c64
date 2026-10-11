@@ -40,6 +40,52 @@ Changes to the original code (all the same size, marked `tilt-mod:` in
 | `$46A5` | `inc maze` | `jsr mod_next_maze`: next maze, or end of the level |
 | `$46AE`, `$653B` | `lda maze / cmp #4` | `lda level_end / cmp #1` |
 | `$4850` | `inc level` | `jsr mod_restart_mazes`: level + 1, maze 0 |
+| `$38CF` | `draw_gates` | `jmp mod_draw_gates`: up to 16 gates |
+| `$419D` | `colour_gates` | `jmp mod_colour_gates` (back into its loop) |
+| `$67E1` | `draw_tilt_gates` | `jmp mod_draw_tilt_gates` |
+| `$6B17` | `find_gate` | `jmp mod_find_gate` |
+| `$6B5B` | clear the hit gate's mask bit | `jsr mod_clear_gate_bit` (16 bit mask) |
+| `$3B62`, `$3B89` | `ldx gate_mask` | `jsr gate_mask_any` |
+| `gate_table,x` (14 places) | 8 gates per slot at `$3991` | `gate_table16,x`: 16 per slot at `$C000+` |
+| `$46A5` (again) | `jsr mod_next_maze` | `jsr skip_arm`: fire skips the interstitial |
+| `$4667` | `lda wait_counter` (`wait_frames`) | `jsr skip_poll_wait` |
+| `$4309` | `lda slide_state` (`slide_tick`) | `jsr skip_poll_slide` |
+| `$46E8` | `jsr level_sign_slide_out` | `jsr skip_sign_out` |
+| `$6013` | `jmp KERNAL_IRQ_EXIT` (after a colour split) | `jmp ingame_music_irq`: in-game music |
+
+### In-game music
+
+While the ball is rolling, tilt-mod plays tune 5 (`src/ingame_music.asm`),
+a tune the original never plays: tune 2's melody alone on SID voice 1, the
+voice the sound effects leave free (see `../../docs/music.md`). It follows
+the music switch (M on the title screen). It runs in the raster IRQ after the
+line-105 colour split (done by line ~119; the next split is at 199), with the
+driver's voice loop limited to voice 1, so the rolling, clunk and gate sounds
+are untouched. It pauses while voice 1 is needed elsewhere: the BACKUP alarm,
+the power refill tone, the level jingle. Between mazes the tune carries on
+where it was; after the level jingle it starts again.
+
+### Fire skips the interstitial
+
+After the bonus count, the level sign, the maze slide (or the roll back through
+the mazes at the end of a level) and the sign slide-out take about 14 seconds
+(19 at the end of a level). A new fire press (or SPACE) during that time jumps
+straight to the next maze, ready for the ball (`src/skip.asm`). Fire held from
+before does not count: it has to be released first. After a skip the game
+waits for fire to be released, so the held button doesn't release the ball at
+once. The power refill on a new level still plays (about a second). In the
+emulator the skipped and unskipped runs end with the same screen, colours,
+score, power, level and maze.
+
+### Up to 16 gates
+
+The original has exactly 8 gates per maze: one mask byte per level row and
+loops of 8 in every gate routine. `src/gates16.asm` keeps up to 16 gates per
+slot, a gate count per slot and 16 bit masks, and replaces those routines (the
+table above). With 8 gates it behaves exactly like the original (checked in
+the emulator: same screens before and during a gate flip, same `find_gate` /
+`gate_hit` results). Redrawing 16 fire gates during a flip ends at raster line
+~91 instead of ~52, well inside the frame.
 
 The loader must not live at `$A000-$BFFF`: while a cartridge bank is read
 (`$01 = $37`) the BASIC ROM covers that area. `$B000-$BFFF` is still free for
@@ -51,12 +97,13 @@ while the cartridge is on.
 | Bank | Contents |
 |------|----------|
 | 0-9 | the original cartridge (loader, game, loading picture) with the modded game |
-| 10 | maze directory: `$8000` maze count, `$8001` demo maze, `$8002` "TILTMAZE", `$800A` start level, `$8040 + n*64` record n |
+| 10 | maze directory: `$8000` maze count, `$8001` demo maze, `$8002` "TILTMAZE", `$800A` start level, `$8040 + n*128` record n |
 | 11-15 | maze screens, 8 per bank (1K each) |
 
-Record (64 bytes): hole X, hole Y, ball start X (low, high), ball start Y,
-floor colour, frame colour, 5 gate masks, 8 gates (screen address low/high,
-orientation), screen bank, screen page.
+Record (128 bytes): hole X, hole Y, ball start X (low, high), ball start Y,
+floor colour, frame colour, 5 gate masks for gates 1-8, gates 1-8 (screen
+address low/high, orientation), screen bank, screen page, 5 gate masks for
+gates 9-16, gate count, gates 9-16 (see `src/maze_loader.asm`).
 
 At most 16 banks (128K): 40 mazes.
 
@@ -71,9 +118,10 @@ export` writes it from the game image). The format is described at the top of
   editor places them automatically).
 * `hole`, `start`: exit hole and ball start in sprite coordinates.
 * `floor_colour`, `frame_colour`: 8-15 (multicolour; shown as value AND 7).
-* `gates`: 8 gates, each at a cell (`col`, `row`, top left of its 3x3 block)
-  with an orientation 0-3.
-* `gate_masks`: 5 rows (levels 1, 2, 3, 4, 5+), each 8 bits for gates 8..1:
+* `gates`: 0-16 gates, each at a cell (`col`, `row`, top left of its 3x3 block)
+  with an orientation 0-3. The original mazes have 8.
+* `gate_masks`: 5 rows (levels 1, 2, 3, 4, 5+), one bit per gate, last gate
+  first (8 digits for up to 8 gates, else one per gate):
   the kind of each gate on that level. 1 = fire gate (a bar that fire flips
   open for a moment), 0 = tilt gate (a bar that only opens while the board is
   tilting against it). Every gate is always there, as one kind or the other.

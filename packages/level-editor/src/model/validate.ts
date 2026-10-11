@@ -3,7 +3,7 @@
 // what was meant.
 
 import { edgeProblems, inEdit, WALL } from './autotile';
-import { GATES, MASK_ROWS, MAX_MAZES, spriteToCell, type Maze, type MazeSet } from './maze';
+import { MASK_ROWS, MAX_GATES, MAX_MAZES, spriteToCell, type Maze, type MazeSet } from './maze';
 
 export interface Problem {
   level: 'error' | 'warning';
@@ -26,11 +26,16 @@ export function checkMaze(m: Maze, i: number): Problem[] {
     add('error', e.want === null
       ? 'floor cell has no edge character for its walls (e.g. a 1-cell corridor between two walls)'
       : 'floor edge does not match its walls', e.col, e.row);
-  if (m.gates.length !== GATES) add('error', `needs exactly ${GATES} gates`);
+  if (m.gates.length > MAX_GATES) add('error', `at most ${MAX_GATES} gates (has ${m.gates.length})`);
   if (m.gate_masks.length !== MASK_ROWS) add('error', `needs ${MASK_ROWS} gate mask rows`);
   m.gates.forEach((g, k) => {
     const size = gateSize(g.orientation);
     if (!inEdit(g.col, g.row) || !inEdit(g.col + size - 1, g.row + size - 1)) add('error', `gate ${k + 1} is not inside the board`, g.col, g.row);
+    m.gates.slice(0, k).forEach((h, j) => {
+      const hs = gateSize(h.orientation);
+      if (g.col < h.col + hs && h.col < g.col + size && g.row < h.row + hs && h.row < g.row + size)
+        add('warning', `gates ${j + 1} and ${k + 1} overlap`, g.col, g.row);
+    });
   });
   for (const k of ['floor_colour', 'frame_colour'] as const)
     if (m[k] < 8 || m[k] > 15) add('error', `${k.replace('_', ' ')} must be 8-15`);

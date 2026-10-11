@@ -28,7 +28,7 @@ I/O and KERNAL on (the game uses the KERNAL IRQ entry/exit).
 | `$76AE-$77FF` | unused |
 | `$7800-$7BE7` | colour buffer (copied to colour RAM). `$7800/$7900`: floor mark list (low/high bytes). At load: maze 2 screen |
 | `$7C00-$7FE7` | screen buffer (copied to the screen). At load: maze 3 screen |
-| `$8000-$8CFF` | music driver (`$8000` = command byte, `$8001` = play) and music data |
+| `$8000-$8CFF` | music driver (`$8000` = command byte, `$8001` = play) and music data (see [music.md](music.md)) |
 | `$8D00-$8EFF` | title screen sprites (swapped with `$2800-$29FF`) |
 | `$8F00-$9FFF` | **unused** (leftover bytes) |
 | `$A000-$AFFF` | the four maze screens, 1K each (copied there at start-up) |

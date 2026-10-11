@@ -8,8 +8,8 @@
 //   - the maze's 1K screen  -> $A000 + slot * $400   (read by draw_maze_screen)
 //   - the maze's record     -> entry `slot` of hole_x_by_maze, hole_y_by_maze,
 //                              ball_start_positions, maze_floor_colours,
-//                              maze_frame_colours, gate_masks_by_level (5 rows)
-//                              and the slot's 8 entries of gate_table
+//                              maze_frame_colours, and the slot's gates, gate
+//                              count and 16 bit gate masks (gates16.asm)
 // A level is maze 0 .. maze_count-1; then the level goes up and maze 0 follows.
 //
 // The loader lives at $C000: while the cartridge is read ($01 = $37) the
@@ -19,13 +19,16 @@
 // Cartridge layout (made by tools/mazes.py, packed by cart.asm):
 //   bank 10 = directory:  $8000 maze count, $8001 demo maze,
 //                         $8002-$8009 "TILTMAZE", $800A start level (0 = level 1),
-//                         $8040 + n * 64 = record n
+//                         $8040 + n * 128 = record n
 //   banks 11+ = screens, 8 per bank (bank and page are in the record)
-// Record (64 bytes):
+// Record (128 bytes):
 //   +0 hole X  +1 hole Y  +2/+3 ball start X (low, high)  +4 ball start Y
-//   +5 floor colour  +6 frame colour  +7..+11 gate masks for level rows 0-4
-//   +12..+35 eight gates: screen address low, high, orientation
+//   +5 floor colour  +6 frame colour  +7..+11 gate masks, gates 1-8, for level rows 0-4
+//   +12..+35 gates 1-8: screen address low, high, orientation
 //   +36 screen bank  +37 screen page ($80-$9C)
+//   +38..+42 gate masks, gates 9-16, for level rows 0-4
+//   +43 number of gates (0-16)
+//   +44..+67 gates 9-16
 // ============================================================================
 
 .const MAZE_DIR_BANK  = 10
@@ -42,7 +45,10 @@
 .const REC_GATES      = 12
 .const REC_BANK       = 36
 .const REC_PAGE       = 37
-.const REC_SIZE       = 64
+.const REC_MASKS_HI   = 38
+.const REC_GATE_COUNT = 43
+.const REC_GATES_HI   = 44
+.const REC_SIZE       = 128
 .const CART_OFF       = $80                 // $DE00 bit 7: cartridge off
 
 maze_number:    .byte 0                     // maze being played (0 .. maze_count-1)
@@ -113,20 +119,16 @@ load_maze:
     sta $01
     lda #MAZE_DIR_BANK
     sta $de00
-    // record address = DIR_RECORDS + maze_number * 64
+    // record address = DIR_RECORDS + maze_number * 128
     lda maze_number
-    lsr
     lsr
     clc
     adc #>DIR_RECORDS
     sta rec_src + 2
     lda maze_number
-    asl
-    asl
-    asl
-    asl
-    asl
-    asl
+    lsr
+    lda #$00
+    ror
     clc
     adc #<DIR_RECORDS
     sta rec_src + 1
@@ -189,7 +191,9 @@ scr_dst:
     ldx maze                                // gate masks: one per level row (0-4)
     ldy #$00
 !:  lda record + REC_MASKS,y
-    sta gate_masks_by_level,x
+    sta gate_masks_lo,x
+    lda record + REC_MASKS_HI,y
+    sta gate_masks_hi,x
     txa
     clc
     adc #$04
@@ -197,12 +201,16 @@ scr_dst:
     iny
     cpy #$05
     bne !-
-    ldx maze                                // the slot's 8 gates
-    lda maze_gate_index,x
+    ldx maze                                // the slot's gates
+    lda record + REC_GATE_COUNT
+    sta gate_counts,x
+    lda gate_slot_index,x
     tax
     ldy #$00
-!:  lda record + REC_GATES,y
-    sta gate_table,x
+!:  lda record + REC_GATES,y                // gates 1-8
+    sta gate_table16,x
+    lda record + REC_GATES_HI,y             // gates 9-16
+    sta gate_table16 + 24,x
     inx
     iny
     cpy #24

@@ -72,6 +72,7 @@ music_tick:
     inc mus_note_age                            // $8055
     inc D86ca                                   // $8058
     inc D86cb                                   // $805b
+music_top_voice:                                // tilt-mod: label (ingame_music.asm sets the operand)
     ldx #$02                                    // $805e
     stx music_voice                             // $8060
 music_voice_loop:

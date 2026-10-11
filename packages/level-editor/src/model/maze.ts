@@ -8,7 +8,8 @@ export const ROWS = 25;
 export const EDIT = { top: 5, bottom: 21, left: 3, right: 35 };
 export const RIM = { top: 4, bottom: 22, left: 2, right: 36 };
 export const MAX_MAZES = 40;
-export const GATES = 8;
+/** gates per maze: 0-16 (the original mazes have 8; tilt-mod allows 16) */
+export const MAX_GATES = 16;
 /** gate mask rows: levels 1, 2, 3, 4, 5+ */
 export const MASK_ROWS = 5;
 
@@ -31,7 +32,7 @@ export interface Maze {
   floor_colour: number;
   frame_colour: number;
   gates: Gate[];
-  /** 5 rows x 8 bits: gate k is there on that level row if bit k is set */
+  /** 5 rows, bit k = gate k's kind on that level row: 1 fire gate, 0 tilt gate */
   gate_masks: number[];
 }
 
@@ -71,7 +72,7 @@ export function toJson(s: MazeSet): object {
       floor_colour: z.floor_colour,
       frame_colour: z.frame_colour,
       gates: z.gates,
-      gate_masks: z.gate_masks.map((m) => m.toString(2).padStart(8, '0')),
+      gate_masks: z.gate_masks.map((m) => (m & ((1 << z.gates.length) - 1)).toString(2).padStart(Math.max(8, z.gates.length), '0')),
     })),
   };
 }

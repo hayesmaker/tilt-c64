@@ -28,7 +28,7 @@ Needs Java + KickAssembler (`KICKASS=/path/to/KickAss.jar`, default
     with **Pick**, I). Use it for special pieces; auto edges leave them alone.
   * **Copy** / **Paste** (X / V): drag a block, then stamp it, e.g. the
     diagonal walls of the original mazes.
-  * **Gate** (G): pick a gate in the inspector (or 1-8), click to move it,
+  * **Gate** (G): pick a gate in the inspector (or 1-9), click to move it,
     R or right-click to rotate. **Hole** (H) and **Start** (S) place the exit
     hole and the ball.
   * Tilt X / Y shows the board at another tilt; "Level" shows the gates as
@@ -37,7 +37,8 @@ Needs Java + KickAssembler (`KICKASS=/path/to/KickAss.jar`, default
   is always there; per level it is a **fire gate** (ticked, drawn yellow: fire
   flips it open for a moment) or a **tilt gate** (unticked, cyan: a bar that
   only opens while the board is tilting against it, so passing it needs a
-  little wobble). Red crosses on the board mark cells
+  little wobble). **Add gate** / **Remove gate** change the number of gates:
+  0-16 per maze (the original mazes have 8). Red crosses on the board mark cells
   the game has no character for, most often a corridor one cell wide between
   two walls: make corridors at least two cells wide.
 * **Build & play** (Ctrl+Enter) builds the cartridge and runs it: arrow keys
