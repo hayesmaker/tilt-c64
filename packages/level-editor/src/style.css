@@ -45,7 +45,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 #board-wrap canvas { image-rendering: pixelated; }
 #overlay { position: absolute; left: 0; top: 0; cursor: crosshair; }
 #palette { margin-top: 8px; }
-#palette-canvas { image-rendering: pixelated; width: 512px; height: 256px; cursor: pointer; border: 1px solid var(--line); }
+#palette-canvas { image-rendering: pixelated; width: 512px; height: 128px; cursor: pointer; border: 1px solid var(--line); }
 #gates { border-collapse: collapse; width: 100%; }
 #gates td, #gates th { padding: 1px 3px; text-align: center; }
 #gates tr.sel { background: #3d3664; }

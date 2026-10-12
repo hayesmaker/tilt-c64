@@ -478,8 +478,10 @@ function wire() {
   $('#undo').onclick = () => { if (undoStack.length) { redoStack.push(JSON.stringify(set)); restore(undoStack.pop()!); } };
   $('#redo').onclick = () => { if (redoStack.length) { undoStack.push(JSON.stringify(set)); restore(redoStack.pop()!); } };
   $<HTMLCanvasElement>('#palette-canvas').onclick = (e) => {
-    const b = (e.target as HTMLCanvasElement).getBoundingClientRect();
-    charCode = Math.floor((e.clientY - b.top) / (b.height / 8)) * 32 + Math.floor((e.clientX - b.left) / (b.width / 32));
+    const c = e.target as HTMLCanvasElement; // offsetX/Y and clientWidth/Height: inside the border
+    const col = Math.floor((e.offsetX * 32) / c.clientWidth), row = Math.floor((e.offsetY * 8) / c.clientHeight);
+    if (col < 0 || col > 31 || row < 0 || row > 7) return;
+    charCode = row * 32 + col;
     setTool('char');
   };
   const viewInput = (id: string, f: (v: string, el: HTMLInputElement) => void) =>
