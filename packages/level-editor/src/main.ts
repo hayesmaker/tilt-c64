@@ -2,14 +2,14 @@
 // builds a tilt-mod cartridge through the server API and plays it in c64-ready.
 
 import './style.css';
-import { inEdit, kindOf, retile, WALL, FLOOR } from './model/autotile';
+import { carveDiagonal, cycleSlope, diagonalPath, inEdit, kindOf, retile, WALL, FLOOR } from './model/autotile';
 import { loadAssets, type Assets } from './model/assets';
 import { cellToSprite, cloneMaze, COLS, EDIT, fromJson, MAX_GATES, MAX_MAZES, ROWS, toJson, type Maze, type MazeSet } from './model/maze';
 import { checkSet, gateSize, type Problem } from './model/validate';
 import { charImage, hexColour, renderMaze, type RenderOptions } from './editor/render';
 import { PlayerOverlay } from './editor/player';
 
-type Tool = 'wall' | 'floor' | 'char' | 'pick' | 'copy' | 'paste' | 'gate' | 'hole' | 'start';
+type Tool = 'wall' | 'floor' | 'diagonal' | 'char' | 'pick' | 'copy' | 'paste' | 'gate' | 'hole' | 'start';
 const STORE = 'tilt-editor.project';
 const COLOUR_NAMES = ['black', 'white', 'red', 'cyan', 'purple', 'green', 'blue', 'yellow'];
 
@@ -130,7 +130,12 @@ function drawOverlay() {
       octx.beginPath(); octx.moveTo(x + 2, y + 2); octx.lineTo(x + w - 2, y + h - 2);
       octx.moveTo(x + w - 2, y + 2); octx.lineTo(x + 2, y + h - 2); octx.stroke();
     }
-  if (drag) {
+  if (drag && tool === 'diagonal') {
+    // the corridor's floor (3 cells per row) along the snapped 45 degree line
+    octx.strokeStyle = '#66d9ff';
+    octx.lineWidth = 2;
+    for (const [c, r] of diagonalPath(drag.c, drag.r, drag.c2, drag.r2)) octx.strokeRect(...cellRect(c - 1, r, 3, 1));
+  } else if (drag) {
     const c0 = Math.min(drag.c, drag.c2), r0 = Math.min(drag.r, drag.r2);
     octx.strokeStyle = '#66d9ff';
     octx.lineWidth = 2;
@@ -178,7 +183,7 @@ function onDown(e: MouseEvent) {
     }
     return;
   }
-  if (tool === 'copy') {
+  if (tool === 'copy' || tool === 'diagonal') {
     drag = { c, r, c2: c, r2: r };
     drawOverlay();
     return;
@@ -224,6 +229,14 @@ function onMove(e: MouseEvent) {
 }
 
 function onUp() {
+  if (drag && tool === 'diagonal') {
+    const { c, r, c2, r2 } = drag;
+    drag = null;
+    snapshot();
+    if (diagonalPath(c, r, c2, r2).length < 2) cycleSlope(maze(), c, r);
+    else carveDiagonal(maze(), c, r, c2, r2);
+    changed();
+  }
   if (drag) {
     const c0 = Math.max(0, Math.min(drag.c, drag.c2)), c1 = Math.min(COLS - 1, Math.max(drag.c, drag.c2));
     const r0 = Math.max(0, Math.min(drag.r, drag.r2)), r1 = Math.min(ROWS - 1, Math.max(drag.r, drag.r2));
@@ -564,7 +577,7 @@ function wire() {
     if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); $('#redo').click(); return; }
     if ((e.ctrlKey || e.metaKey) && k === 'enter') { e.preventDefault(); void buildAndPlay(e.shiftKey ? 'maze' : 'set'); return; }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const keys: Record<string, Tool> = { w: 'wall', f: 'floor', c: 'char', i: 'pick', x: 'copy', v: 'paste', g: 'gate', h: 'hole', s: 'start' };
+    const keys: Record<string, Tool> = { w: 'wall', f: 'floor', d: 'diagonal', c: 'char', i: 'pick', x: 'copy', v: 'paste', g: 'gate', h: 'hole', s: 'start' };
     if (keys[k]) setTool(keys[k]);
     else if (k === 'r') rotateGate();
     else if (k >= '1' && k <= '9' && tool === 'gate' && Number(k) <= maze().gates.length) { gateSel = Number(k) - 1; refreshAll(); }

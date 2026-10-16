@@ -32,3 +32,5 @@
   in the emulator. The loader can't live at $A000-$BFFF (BASIC ROM shows while a bank is read).
 * `packages/level-editor`: Vite/TS editor (`npm run dev`, port 5181, `npm test`).
   `public/tilt-assets.json` comes from `tools/editor_assets.py`.
+  `src/model/tile-rules.json` (auto tiles incl. 45 degree walls: shape of a cell + 8 neighbours
+  -> character, from the original mazes, mirrored) comes from `tools/editor_tile_rules.py`.
